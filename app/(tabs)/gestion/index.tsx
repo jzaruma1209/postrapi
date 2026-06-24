@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import PinModal from "../../../src/components/shared/PinModal";
-import { hayPinConfigurado } from "../../../src/services/pin.service";
+import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 const MENU_ITEMS = [
   {
@@ -38,12 +38,10 @@ const MENU_ITEMS = [
 
 export default function GestionIndex() {
   const router = useRouter();
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showPinModal, setShowPinModal] = useState(true);
-
-  // Cada vez que la pantalla gana foco (se monta), se pide el PIN
-  // En Expo Router con tabs, los componentes se montan una vez.
-  // Pero setShowPinModal(true) como estado inicial forzará pedirlo.
 
   const handlePinSuccess = () => {
     setShowPinModal(false);
@@ -52,7 +50,6 @@ export default function GestionIndex() {
 
   const handlePinCancel = () => {
     setShowPinModal(false);
-    // Si cancela, volvemos a la pestaña anterior (o a Resumen por defecto)
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -62,7 +59,7 @@ export default function GestionIndex() {
 
   if (!isAuthenticated && showPinModal) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#141414" }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <PinModal
           visible={showPinModal}
           onSuccess={handlePinSuccess}
@@ -74,23 +71,31 @@ export default function GestionIndex() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#141414" }}>
-      {/* Top Bar (implícito, manual) */}
-      <View style={{ paddingHorizontal: 16, paddingTop: 48, paddingBottom: 16, backgroundColor: "#141414" }}>
-        <Text style={{ fontSize: 16, fontWeight: "500", color: "#ffffff" }}>Gestión</Text>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Top Bar */}
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingTop: 48,
+          paddingBottom: 16,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <Text style={{ fontSize: 22, fontWeight: "700", color: colors.text }}>Gestión</Text>
+        <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>Administra tu negocio</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
         {MENU_ITEMS.map((item) => (
           <TouchableOpacity
             key={item.id}
             activeOpacity={0.7}
             onPress={() => router.push(item.route as any)}
             style={{
-              backgroundColor: "#1e1e1e",
+              backgroundColor: colors.bgCard,
               borderRadius: 14,
-              borderWidth: 0.5,
-              borderColor: "#2a2a2a",
+              borderWidth: isDark ? 0.5 : 1,
+              borderColor: colors.border,
               padding: 16,
               flexDirection: "row",
               alignItems: "center",
@@ -100,12 +105,14 @@ export default function GestionIndex() {
             {/* Ícono */}
             <View
               style={{
-                width: 40,
-                height: 40,
-                backgroundColor: "#2a2a2a",
-                borderRadius: 8,
+                width: 44,
+                height: 44,
+                backgroundColor: isDark ? "#2a1a00" : "#fff4e6",
+                borderRadius: 10,
                 alignItems: "center",
                 justifyContent: "center",
+                borderWidth: isDark ? 0 : 1,
+                borderColor: "#F9731620",
               }}
             >
               <Feather name={item.icon} size={20} color="#F97316" />
@@ -113,14 +120,14 @@ export default function GestionIndex() {
 
             {/* Textos */}
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: "500", color: "#ffffff", marginBottom: 2 }}>
+              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 2 }}>
                 {item.title}
               </Text>
-              <Text style={{ fontSize: 11, color: "#666" }}>{item.description}</Text>
+              <Text style={{ fontSize: 12, color: colors.textMuted }}>{item.description}</Text>
             </View>
 
             {/* Chevron */}
-            <Feather name="chevron-right" size={20} color="#555" />
+            <Feather name="chevron-right" size={18} color={colors.tabInactive} />
           </TouchableOpacity>
         ))}
       </ScrollView>

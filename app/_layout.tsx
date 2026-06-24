@@ -6,14 +6,34 @@ import { View, ActivityIndicator } from "react-native";
 import { runMigrations } from "../src/db/migrations";
 import { runSeeds } from "../src/db/seeds";
 import { iniciarSyncAutomatico } from "../src/services/sync.service";
+import { db } from "../src/db";
+import { configuracion } from "../src/db/schema";
+import { eq } from "drizzle-orm";
+import { useThemeStore } from "../src/stores/useThemeStore";
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
+  const isDark = useThemeStore((s) => s.isDark);
+  const setDark = useThemeStore((s) => s.setDark);
 
   useEffect(() => {
     const init = async () => {
       await runMigrations();
       await runSeeds();
+
+      // Cargar tema guardado
+      try {
+        const rows = await db
+          .select()
+          .from(configuracion)
+          .where(eq(configuracion.clave, "tema"));
+        if (rows.length > 0) {
+          setDark(rows[0].valor !== "claro");
+        }
+      } catch (_) {
+        // Si falla, quedamos en modo oscuro por defecto
+      }
+
       setReady(true);
     };
     init();
@@ -36,7 +56,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="#141414" />
+      <StatusBar style={isDark ? "light" : "dark"} backgroundColor={isDark ? "#141414" : "#f5f5f5"} />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   );

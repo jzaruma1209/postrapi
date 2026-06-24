@@ -15,6 +15,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { configuracion } from "../../../src/db/schema";
 import { escanearDispositivos } from "../../../src/services/printer.service";
+import { useThemeStore, useColors } from "../../../src/stores/useThemeStore";
 
 const DEFAULT_CONFIG = {
   nombre_negocio: "Mi Negocio",
@@ -26,6 +27,9 @@ const DEFAULT_CONFIG = {
 
 export default function GestionConfiguracion() {
   const router = useRouter();
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
+  const setDark = useThemeStore((s) => s.setDark);
 
   const [nombreNegocio, setNombreNegocio] = useState("");
   const [moneda, setMoneda] = useState("");
@@ -64,6 +68,23 @@ export default function GestionConfiguracion() {
     if (!valor) {
       setImpresoraMac("");
       setDispositivos([]);
+    }
+  };
+
+  const handleToggleTema = async (valor: boolean) => {
+    // valor = true → modo claro; false → modo oscuro
+    const newIsDark = !valor;
+    setDark(newIsDark);
+    try {
+      await db
+        .insert(configuracion)
+        .values({ clave: "tema", valor: newIsDark ? "oscuro" : "claro" })
+        .onConflictDoUpdate({
+          target: configuracion.clave,
+          set: { valor: newIsDark ? "oscuro" : "claro" },
+        });
+    } catch (e) {
+      console.error("Error guardando tema:", e);
     }
   };
 
@@ -109,7 +130,7 @@ export default function GestionConfiguracion() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#141414" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -118,80 +139,161 @@ export default function GestionConfiguracion() {
           paddingHorizontal: 16,
           paddingTop: 48,
           paddingBottom: 16,
-          backgroundColor: "#141414",
+          backgroundColor: colors.bg,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Feather name="arrow-left" size={20} color="#fff" />
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#ffffff" }}>Configuración</Text>
+          <Feather name="arrow-left" size={20} color={colors.text} />
+          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Configuración</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View style={{ backgroundColor: "#1e1e1e", borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: "#2a2a2a", gap: 16 }}>
+
+        {/* ── Sección: Apariencia ─────────────────────────────────────────── */}
+        <View
+          style={{
+            backgroundColor: colors.bgCard,
+            borderRadius: 14,
+            padding: 16,
+            borderWidth: isDark ? 0.5 : 1,
+            borderColor: colors.border,
+          }}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", letterSpacing: 0.5, marginBottom: 14, textTransform: "uppercase" }}>
+            Apariencia
+          </Text>
+
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  backgroundColor: colors.bgInput,
+                  borderRadius: 8,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name={isDark ? "moon" : "sun"} size={18} color="#F97316" />
+              </View>
+              <View>
+                <Text style={{ color: colors.text, fontSize: 14, fontWeight: "500" }}>
+                  {isDark ? "Modo Oscuro" : "Modo Claro"}
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>
+                  {isDark ? "Activa el modo claro" : "Activa el modo oscuro"}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={!isDark}
+              onValueChange={handleToggleTema}
+              trackColor={{ false: isDark ? "#555" : "#ccc", true: "#F97316" }}
+              thumbColor="#fff"
+            />
+          </View>
+        </View>
+
+        {/* ── Sección: Negocio ────────────────────────────────────────────── */}
+        <View
+          style={{
+            backgroundColor: colors.bgCard,
+            borderRadius: 14,
+            padding: 16,
+            borderWidth: isDark ? 0.5 : 1,
+            borderColor: colors.border,
+            gap: 16,
+          }}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" }}>
+            Negocio
+          </Text>
+
           <View>
-            <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Nombre del Negocio</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Nombre del Negocio</Text>
             <TextInput
               value={nombreNegocio}
               onChangeText={setNombreNegocio}
               style={{
-                backgroundColor: "#2a2a2a",
-                color: "#fff",
+                backgroundColor: colors.bgInput,
+                color: colors.text,
                 borderRadius: 10,
                 padding: 12,
                 fontSize: 14,
+                borderWidth: isDark ? 0 : 1,
+                borderColor: colors.border,
               }}
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               placeholder="Ej. Mi Tienda"
             />
           </View>
 
           <View>
-            <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Moneda</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Moneda</Text>
             <TextInput
               value={moneda}
               onChangeText={setMoneda}
               style={{
-                backgroundColor: "#2a2a2a",
-                color: "#fff",
+                backgroundColor: colors.bgInput,
+                color: colors.text,
                 borderRadius: 10,
                 padding: 12,
                 fontSize: 14,
+                borderWidth: isDark ? 0 : 1,
+                borderColor: colors.border,
               }}
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               placeholder="Ej. $"
             />
           </View>
 
           <View>
-            <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Stock mínimo por defecto</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Stock mínimo por defecto</Text>
             <TextInput
               value={stockMinimo}
               onChangeText={setStockMinimo}
               keyboardType="numeric"
               style={{
-                backgroundColor: "#2a2a2a",
-                color: "#fff",
+                backgroundColor: colors.bgInput,
+                color: colors.text,
                 borderRadius: 10,
                 padding: 12,
                 fontSize: 14,
+                borderWidth: isDark ? 0 : 1,
+                borderColor: colors.border,
               }}
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               placeholder="Ej. 10"
             />
           </View>
         </View>
 
-        <View style={{ backgroundColor: "#1e1e1e", borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: "#2a2a2a", gap: 16 }}>
+        {/* ── Sección: Impresora ──────────────────────────────────────────── */}
+        <View
+          style={{
+            backgroundColor: colors.bgCard,
+            borderRadius: 14,
+            padding: 16,
+            borderWidth: isDark ? 0.5 : 1,
+            borderColor: colors.border,
+            gap: 16,
+          }}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 11, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" }}>
+            Impresora
+          </Text>
+
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View>
-              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "500" }}>Impresora Bluetooth</Text>
-              <Text style={{ color: "#888", fontSize: 11, marginTop: 2 }}>Activar para impresión de tickets</Text>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: "500" }}>Impresora Bluetooth</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>Activar para impresión de tickets</Text>
             </View>
             <Switch
               value={impresoraActiva}
               onValueChange={handleToggleImpresora}
-              trackColor={{ false: "#555", true: "#F97316" }}
+              trackColor={{ false: isDark ? "#555" : "#ccc", true: "#F97316" }}
               thumbColor="#fff"
             />
           </View>
@@ -199,19 +301,21 @@ export default function GestionConfiguracion() {
           {impresoraActiva && (
             <View style={{ gap: 12 }}>
               <View>
-                <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>MAC Address de la impresora</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>MAC Address de la impresora</Text>
                 <TextInput
                   value={impresoraMac}
                   onChangeText={setImpresoraMac}
                   style={{
-                    backgroundColor: "#2a2a2a",
-                    color: "#fff",
+                    backgroundColor: colors.bgInput,
+                    color: colors.text,
                     borderRadius: 10,
                     padding: 12,
                     fontSize: 14,
                     textTransform: "uppercase",
+                    borderWidth: isDark ? 0 : 1,
+                    borderColor: colors.border,
                   }}
-                  placeholderTextColor="#666"
+                  placeholderTextColor={colors.textMuted}
                   placeholder="00:11:22:33:44:55"
                 />
               </View>
@@ -220,7 +324,7 @@ export default function GestionConfiguracion() {
                 onPress={handleEscanear}
                 disabled={escaneando}
                 style={{
-                  backgroundColor: "#2a2a2a",
+                  backgroundColor: colors.bgInput,
                   padding: 12,
                   borderRadius: 10,
                   alignItems: "center",
@@ -228,7 +332,7 @@ export default function GestionConfiguracion() {
                   justifyContent: "center",
                   gap: 8,
                   borderWidth: 1,
-                  borderColor: "#333",
+                  borderColor: colors.borderLight,
                 }}
               >
                 {escaneando ? (
@@ -236,28 +340,28 @@ export default function GestionConfiguracion() {
                 ) : (
                   <Feather name="bluetooth" size={16} color="#F97316" />
                 )}
-                <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>
+                <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>
                   {escaneando ? "Buscando..." : "Buscar dispositivos"}
                 </Text>
               </TouchableOpacity>
 
               {dispositivos.length > 0 && (
                 <View style={{ gap: 8 }}>
-                  <Text style={{ color: "#888", fontSize: 12 }}>Dispositivos encontrados:</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>Dispositivos encontrados:</Text>
                   {dispositivos.map((dev) => (
                     <TouchableOpacity
                       key={dev.address}
                       onPress={() => setImpresoraMac(dev.address)}
                       style={{
-                        backgroundColor: impresoraMac === dev.address ? "#2a1a00" : "#2a2a2a",
+                        backgroundColor: impresoraMac === dev.address ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput,
                         padding: 12,
                         borderRadius: 10,
                         borderWidth: 1,
-                        borderColor: impresoraMac === dev.address ? "#F97316" : "#333",
+                        borderColor: impresoraMac === dev.address ? "#F97316" : colors.borderLight,
                       }}
                     >
-                      <Text style={{ color: "#fff", fontSize: 14, fontWeight: "500" }}>{dev.name || "Desconocido"}</Text>
-                      <Text style={{ color: "#888", fontSize: 12 }}>{dev.address}</Text>
+                      <Text style={{ color: colors.text, fontSize: 14, fontWeight: "500" }}>{dev.name || "Desconocido"}</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 12 }}>{dev.address}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -277,7 +381,7 @@ export default function GestionConfiguracion() {
             marginBottom: 24,
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "500", fontSize: 14 }}>Guardar cambios</Text>
+          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>Guardar cambios</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
