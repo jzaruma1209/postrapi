@@ -307,7 +307,7 @@ export default function BodegaIndex() {
                   <View>
                     <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600", marginBottom: 4 }}>{ing?.nombre || "Desconocido"}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                      +{comp.cantidad} {ing?.unidad} · {new Date(comp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      +{comp.cantidad} {ing?.unidad} · {new Date(comp.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                   </View>
                   <Text style={{ color: "#22c55e", fontSize: 16, fontWeight: "bold" }}>
