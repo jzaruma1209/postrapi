@@ -48,7 +48,7 @@ export default function GestionRecetas() {
           productoId: recetas.productoId,
           ingredienteId: recetas.ingredienteId,
           cantidad: recetas.cantidad,
-          createdAt: recetas.createdAt,
+          created_at: recetas.created_at,
           synced: recetas.synced,
           ingredienteNombre: ingredientes.nombre,
           ingredienteUnidad: ingredientes.unidad,
@@ -96,7 +96,7 @@ export default function GestionRecetas() {
         productoId: productoActual.id,
         ingredienteId: ingredienteSeleccionado,
         cantidad: Number(cantidad),
-        createdAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
         synced: 0,
       });
       setModalVisible(false);

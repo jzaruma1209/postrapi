@@ -7,6 +7,15 @@ import {
 } from "../db/schema";
 import { eq } from "drizzle-orm";
 
+function toSnakeCase(obj: Record<string, any>): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [
+      k.replace(/([A-Z])/g, '_$1').toLowerCase(),
+      v
+    ])
+  );
+}
+
 // Tablas a sincronizar en orden (respetar foreign keys)
 const SYNC_TABLES = [
   { table: productos, name: "productos" },
@@ -53,9 +62,11 @@ export async function sincronizar(): Promise<{ ok: boolean; mensaje: string }> {
       if (pendientes.length === 0) continue;
 
       // Subir a Supabase con upsert (por si hay conflictos)
+      const pendientesSnake = pendientes.map(toSnakeCase);
+
       const { error } = await supabase
         .from(name)
-        .upsert(pendientes, { onConflict: "id" });
+        .upsert(pendientesSnake, { onConflict: "id" });
 
       if (error) {
         console.error(`Error sync tabla ${name}:`, error.message);

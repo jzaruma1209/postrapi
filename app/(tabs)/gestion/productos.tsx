@@ -30,7 +30,7 @@ export default function GestionProductos() {
 
   const cargarProductos = async () => {
     try {
-      const data = await db.select().from(productos).orderBy(desc(productos.createdAt));
+      const data = await db.select().from(productos).orderBy(desc(productos.created_at));
       setListaProductos(data);
     } catch (error) {
       console.error("Error al cargar productos:", error);
@@ -82,7 +82,7 @@ export default function GestionProductos() {
           nombre: nombre.trim(),
           precio: Number(precio),
           activo: activo ? 1 : 0,
-          createdAt: new Date().toISOString(),
+          created_at: new Date().toISOString(),
           synced: 0,
         });
       }

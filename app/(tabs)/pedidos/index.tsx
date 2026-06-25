@@ -290,7 +290,7 @@ export default function PedidosIndex() {
 
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
               <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                {new Date(ped.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(ped.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
 
               {ped.estado === "pendiente" && (

@@ -187,7 +187,7 @@ export default function GastosIndex() {
                     <Text style={{ color: catStyle.text, fontSize: 11, fontWeight: "600" }}>{catStyle.label}</Text>
                   </View>
                   <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-                    {new Date(gasto.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(gasto.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </Text>
                 </View>
               </View>

@@ -98,7 +98,7 @@ export default function DetalleVenta() {
         <View style={{ backgroundColor: "#1e1e1e", borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: "#2a2a2a", gap: 12 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: "#333", paddingBottom: 12 }}>
             <Text style={{ color: "#888", fontSize: 13 }}>Fecha y Hora</Text>
-            <Text style={{ color: "#fff", fontSize: 13 }}>{formatFechaHora(detalle.venta.createdAt)}</Text>
+            <Text style={{ color: "#fff", fontSize: 13 }}>{formatFechaHora(detalle.venta.created_at)}</Text>
           </View>
 
           <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: "#333", paddingBottom: 12 }}>
@@ -161,7 +161,7 @@ export default function DetalleVenta() {
               POSTRAPI
             </Text>
             <Text style={{ fontSize: 12, textAlign: "center", marginBottom: 24, color: "#333" }}>
-              {formatFechaHora(detalle.venta.createdAt)}
+              {formatFechaHora(detalle.venta.created_at)}
             </Text>
 
             <View style={{ borderBottomWidth: 1, borderBottomColor: "#ccc", borderStyle: "dashed", marginBottom: 12 }} />

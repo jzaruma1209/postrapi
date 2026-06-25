@@ -11,7 +11,7 @@ type VentaHistorial = {
   id: string;
   total: number;
   metodoPago: string;
-  createdAt: string;
+  created_at: string;
   itemsCount: number;
 };
 
@@ -27,19 +27,19 @@ export default function HistorialVentas() {
           id: ventas.id,
           total: ventas.total,
           metodoPago: ventas.metodoPago,
-          createdAt: ventas.createdAt,
+          created_at: ventas.created_at,
           itemsCount: sql<number>`count(${ventaItems.id})`,
         })
         .from(ventas)
         .leftJoin(ventaItems, eq(ventas.id, ventaItems.ventaId))
         .where(
           and(
-            gte(ventas.createdAt, `${dateStr}T00:00:00.000Z`),
-            lte(ventas.createdAt, `${dateStr}T23:59:59.999Z`)
+            gte(ventas.created_at, `${dateStr}T00:00:00.000Z`),
+            lte(ventas.created_at, `${dateStr}T23:59:59.999Z`)
           )
         )
         .groupBy(ventas.id)
-        .orderBy(desc(ventas.createdAt));
+        .orderBy(desc(ventas.created_at));
 
       setListaVentas(data);
     } catch (error) {
@@ -135,7 +135,7 @@ export default function HistorialVentas() {
           >
             <View>
               <Text style={{ fontSize: 14, color: "#fff", fontWeight: "500", marginBottom: 4 }}>
-                {formatHora(v.createdAt)}
+                {formatHora(v.created_at)}
               </Text>
               <Text style={{ fontSize: 11, color: "#888" }}>
                 {v.itemsCount} {v.itemsCount === 1 ? "item" : "items"}
