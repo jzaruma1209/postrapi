@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -44,6 +44,13 @@ export default function PedidosIndex() {
   const [nota, setNota] = useState("");
   const [origen, setOrigen] = useState<OrigenPedido>("en_persona");
   const [procesando, setProcesando] = useState(false);
+
+  const fechaHoyStr = useMemo(() => {
+    const fecha = new Date();
+    const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+    const formateada = fecha.toLocaleDateString('es-ES', opciones);
+    return formateada.charAt(0).toUpperCase() + formateada.slice(1);
+  }, []);
 
   // Cobro Modal
   const [modalCobro, setModalCobro] = useState(false);
@@ -210,11 +217,14 @@ export default function PedidosIndex() {
           justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingTop: 48,
-          paddingBottom: 16,
+          paddingBottom: 24,
           backgroundColor: colors.bg,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>Pedidos</Text>
+        <View>
+          <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.text }}>Pedidos</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2 }}>{fechaHoyStr}</Text>
+        </View>
         <TouchableOpacity
           onPress={() => setModalNuevo(true)}
           style={{ backgroundColor: "#F97316", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 }}

@@ -1,8 +1,10 @@
 import { Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import { useMemo } from "react";
 import { formatDate, formatTime, formatCurrency } from "../../utils/dates";
 import { imprimirTicket, hayImpresoraConfigurada } from "../../services/printer.service";
 import { useState, useEffect } from "react";
 import type { DatosTicket } from "../../services/printer.service";
+import { useColors, useThemeStore } from "../../stores/useThemeStore";
 
 interface TicketModalProps {
   visible: boolean;
@@ -11,8 +13,12 @@ interface TicketModalProps {
 }
 
 export default function TicketModal({ visible, datos, onClose }: TicketModalProps) {
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const [tieneImpresora, setTieneImpresora] = useState(false);
   const [imprimiendo, setImprimiendo] = useState(false);
+
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   useEffect(() => {
     hayImpresoraConfigurada().then(setTieneImpresora);
@@ -95,78 +101,79 @@ export default function TicketModal({ visible, datos, onClose }: TicketModalProp
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  card: {
-    backgroundColor: "#1e1e1e",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderWidth: 0.5,
-    borderColor: "#2a2a2a",
-    padding: 24,
-    width: "100%",
-    maxHeight: "80%",
-  },
-  titulo: {
-    color: "#888",
-    fontSize: 12,
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  scroll: { maxHeight: 400 },
-  negocio: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  fecha: {
-    color: "#888",
-    fontSize: 12,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  divider: {
-    height: 0.5,
-    backgroundColor: "#2a2a2a",
-    marginVertical: 10,
-  },
-  itemRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  itemNombre: { color: "#fff", fontSize: 13 },
-  itemCantidad: { color: "#888", fontSize: 11, marginTop: 2 },
-  itemSubtotal: { color: "#F97316", fontSize: 13, fontWeight: "500" },
-  totalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  totalLabel: { color: "#fff", fontSize: 15, fontWeight: "500" },
-  totalValor: { color: "#22c55e", fontSize: 18, fontWeight: "500" },
-  metodoPago: { color: "#888", fontSize: 12, marginBottom: 4 },
-  gracias: { color: "#555", fontSize: 12, textAlign: "center", marginTop: 8 },
-  botonesRow: { flexDirection: "row", gap: 10, marginTop: 16 },
-  btn: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  btnImprimir: { backgroundColor: "#F97316" },
-  btnCerrar: {
-    backgroundColor: "#1e1e1e",
-    borderWidth: 1,
-    borderColor: "#F97316",
-  },
-  btnText: { color: "#fff", fontSize: 14, fontWeight: "500" },
-});
+const createStyles = (colors: ReturnType<typeof useColors>, isDark: boolean) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      alignItems: "center",
+      justifyContent: "flex-end",
+    },
+    card: {
+      backgroundColor: colors.bgCard,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      padding: 24,
+      width: "100%",
+      maxHeight: "80%",
+    },
+    titulo: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textAlign: "center",
+      marginBottom: 16,
+    },
+    scroll: { maxHeight: 400 },
+    negocio: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "500",
+      textAlign: "center",
+      marginBottom: 4,
+    },
+    fecha: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textAlign: "center",
+      marginBottom: 12,
+    },
+    divider: {
+      height: 0.5,
+      backgroundColor: colors.border,
+      marginVertical: 10,
+    },
+    itemRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: 8,
+    },
+    itemNombre: { color: colors.text, fontSize: 13 },
+    itemCantidad: { color: colors.textMuted, fontSize: 11, marginTop: 2 },
+    itemSubtotal: { color: "#F97316", fontSize: 13, fontWeight: "500" },
+    totalRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    totalLabel: { color: colors.text, fontSize: 15, fontWeight: "500" },
+    totalValor: { color: "#22c55e", fontSize: 18, fontWeight: "500" },
+    metodoPago: { color: colors.textMuted, fontSize: 12, marginBottom: 4 },
+    gracias: { color: colors.borderLight, fontSize: 12, textAlign: "center", marginTop: 8 },
+    botonesRow: { flexDirection: "row", gap: 10, marginTop: 16 },
+    btn: {
+      flex: 1,
+      padding: 12,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    btnImprimir: { backgroundColor: "#F97316" },
+    btnCerrar: {
+      backgroundColor: colors.bgCard,
+      borderWidth: 1,
+      borderColor: "#F97316",
+    },
+    btnText: { color: "#fff", fontSize: 14, fontWeight: "500" },
+  });

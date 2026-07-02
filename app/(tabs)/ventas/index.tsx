@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -37,6 +37,13 @@ export default function VentasIndex() {
   const [modalCobro, setModalCobro] = useState(false);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [procesando, setProcesando] = useState(false);
+
+  const fechaHoyStr = useMemo(() => {
+    const fecha = new Date();
+    const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+    const formateada = fecha.toLocaleDateString('es-ES', opciones);
+    return formateada.charAt(0).toUpperCase() + formateada.slice(1);
+  }, []);
 
   // Ticket Modal State
   const [mostrarTicket, setMostrarTicket] = useState(false);
@@ -126,11 +133,14 @@ export default function VentasIndex() {
           justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingTop: 48,
-          paddingBottom: 16,
+          paddingBottom: 24,
           backgroundColor: colors.bg,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>Nueva Venta</Text>
+        <View>
+          <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.text }}>Ventas</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2 }}>{fechaHoyStr}</Text>
+        </View>
         
         <View style={{ backgroundColor: "#F97316", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20 }}>
           <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>Total: ${totalCarrito.toFixed(2)}</Text>

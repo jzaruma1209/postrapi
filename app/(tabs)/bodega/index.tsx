@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   TextInput,
   Alert,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import {
   getIngredientes,
@@ -28,8 +28,16 @@ type TabBodega = "inventario" | "compras" | "ingredientes";
 type PinAction = "ajustar" | "registrar_compra" | "guardar_ingrediente" | null;
 
 export default function BodegaIndex() {
+  const router = useRouter();
   const colors = useColors();
   const isDark = useThemeStore((s) => s.isDark);
+
+  const fechaHoyStr = useMemo(() => {
+    const fecha = new Date();
+    const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+    const formateada = fecha.toLocaleDateString('es-ES', opciones);
+    return formateada.charAt(0).toUpperCase() + formateada.slice(1);
+  }, []);
 
   const [tabActual, setTabActual] = useState<TabBodega>("inventario");
   const [ingredientesList, setIngredientesList] = useState<Ingrediente[]>([]);
@@ -198,11 +206,14 @@ export default function BodegaIndex() {
           justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingTop: 48,
-          paddingBottom: 16,
+          paddingBottom: 24,
           backgroundColor: colors.bg,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text }}>Bodega</Text>
+        <View>
+          <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.text }}>Bodega</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2 }}>{fechaHoyStr}</Text>
+        </View>
         <TouchableOpacity>
           <Feather name="settings" size={20} color={colors.textMuted} />
         </TouchableOpacity>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -43,6 +43,13 @@ export default function GestionIndex() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showPinModal, setShowPinModal] = useState(true);
 
+  const fechaHoyStr = useMemo(() => {
+    const fecha = new Date();
+    const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+    const formateada = fecha.toLocaleDateString('es-ES', opciones);
+    return formateada.charAt(0).toUpperCase() + formateada.slice(1);
+  }, []);
+
   const handlePinSuccess = () => {
     setShowPinModal(false);
     setIsAuthenticated(true);
@@ -75,14 +82,19 @@ export default function GestionIndex() {
       {/* Top Bar */}
       <View
         style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingTop: 48,
-          paddingBottom: 16,
+          paddingBottom: 24,
           backgroundColor: colors.bg,
         }}
       >
-        <Text style={{ fontSize: 22, fontWeight: "700", color: colors.text }}>Gestión</Text>
-        <Text style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>Administra tu negocio</Text>
+        <View>
+          <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.text }}>Gestión</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2 }}>{fechaHoyStr}</Text>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>

@@ -6,6 +6,7 @@ import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { ventas, ventaItems } from "../../../src/db/schema";
 import { todayDate } from "../../../src/utils/dates";
+import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 type VentaHistorial = {
   id: string;
@@ -16,6 +17,8 @@ type VentaHistorial = {
 };
 
 export default function HistorialVentas() {
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const router = useRouter();
   const [listaVentas, setListaVentas] = useState<VentaHistorial[]>([]);
   const [fecha, setFecha] = useState<string>(todayDate());
@@ -69,7 +72,7 @@ export default function HistorialVentas() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#141414" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -78,12 +81,12 @@ export default function HistorialVentas() {
           paddingHorizontal: 16,
           paddingTop: 48,
           paddingBottom: 16,
-          backgroundColor: "#141414",
+          backgroundColor: colors.bg,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Feather name="arrow-left" size={20} color="#fff" />
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#ffffff" }}>Historial de Ventas</Text>
+          <Feather name="arrow-left" size={20} color={colors.text} />
+          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Historial de Ventas</Text>
         </TouchableOpacity>
       </View>
 
@@ -92,25 +95,25 @@ export default function HistorialVentas() {
         <TouchableOpacity
           onPress={setFechaHoy}
           style={{
-            backgroundColor: fecha === todayDate() ? "#F97316" : "#2a2a2a",
+            backgroundColor: fecha === todayDate() ? "#F97316" : colors.bgChip,
             paddingHorizontal: 16,
             paddingVertical: 8,
             borderRadius: 20,
           }}
         >
-          <Text style={{ color: fecha === todayDate() ? "#fff" : "#ccc", fontSize: 12, fontWeight: "500" }}>Hoy</Text>
+          <Text style={{ color: fecha === todayDate() ? "#fff" : colors.textLight, fontSize: 12, fontWeight: "500" }}>Hoy</Text>
         </TouchableOpacity>
         
         <TouchableOpacity
           onPress={setFechaAyer}
           style={{
-            backgroundColor: fecha !== todayDate() ? "#F97316" : "#2a2a2a",
+            backgroundColor: fecha !== todayDate() ? "#F97316" : colors.bgChip,
             paddingHorizontal: 16,
             paddingVertical: 8,
             borderRadius: 20,
           }}
         >
-          <Text style={{ color: fecha !== todayDate() ? "#fff" : "#ccc", fontSize: 12, fontWeight: "500" }}>Ayer</Text>
+          <Text style={{ color: fecha !== todayDate() ? "#fff" : colors.textLight, fontSize: 12, fontWeight: "500" }}>Ayer</Text>
         </TouchableOpacity>
       </View>
 
@@ -121,10 +124,10 @@ export default function HistorialVentas() {
             activeOpacity={0.7}
             onPress={() => router.push(`/ventas/${v.id}` as any)}
             style={{
-              backgroundColor: "#1e1e1e",
+              backgroundColor: colors.bgCard,
               borderRadius: 14,
               borderWidth: 0.5,
-              borderColor: "#2a2a2a",
+              borderColor: colors.border,
               borderLeftWidth: 3,
               borderLeftColor: v.metodoPago === "efectivo" ? "#22c55e" : "#38bdf8",
               padding: 16,
@@ -134,10 +137,10 @@ export default function HistorialVentas() {
             }}
           >
             <View>
-              <Text style={{ fontSize: 14, color: "#fff", fontWeight: "500", marginBottom: 4 }}>
+              <Text style={{ fontSize: 14, color: colors.text, fontWeight: "500", marginBottom: 4 }}>
                 {formatHora(v.created_at)}
               </Text>
-              <Text style={{ fontSize: 11, color: "#888" }}>
+              <Text style={{ fontSize: 11, color: colors.textMuted }}>
                 {v.itemsCount} {v.itemsCount === 1 ? "item" : "items"}
               </Text>
             </View>
@@ -148,7 +151,7 @@ export default function HistorialVentas() {
               </Text>
               <View
                 style={{
-                  backgroundColor: v.metodoPago === "efectivo" ? "#001a10" : "#001a2a",
+                  backgroundColor: v.metodoPago === "efectivo" ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#001a2a" : "#e6f4ff"),
                   paddingHorizontal: 8,
                   paddingVertical: 2,
                   borderRadius: 10,
@@ -163,7 +166,7 @@ export default function HistorialVentas() {
         ))}
 
         {listaVentas.length === 0 && (
-          <Text style={{ color: "#888", textAlign: "center", marginTop: 40 }}>
+          <Text style={{ color: colors.textMuted, textAlign: "center", marginTop: 40 }}>
             No hay ventas registradas para esta fecha.
           </Text>
         )}

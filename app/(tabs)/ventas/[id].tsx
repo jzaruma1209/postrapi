@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos } from "../../../src/db/schema";
 import { getVentaConItems, VentaConItems } from "../../../src/services/ventas.service";
+import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 type VentaDetalleState = VentaConItems & {
   itemsConNombre: {
@@ -18,6 +19,8 @@ type VentaDetalleState = VentaConItems & {
 
 export default function DetalleVenta() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const router = useRouter();
 
   const [detalle, setDetalle] = useState<VentaDetalleState | null>(null);
@@ -61,14 +64,14 @@ export default function DetalleVenta() {
 
   if (!detalle) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#141414", justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: "#888" }}>Cargando...</Text>
+      <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: colors.textMuted }}>Cargando...</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#141414" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -78,34 +81,34 @@ export default function DetalleVenta() {
           paddingHorizontal: 16,
           paddingTop: 48,
           paddingBottom: 16,
-          backgroundColor: "#141414",
+          backgroundColor: colors.bg,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Feather name="arrow-left" size={20} color="#fff" />
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#ffffff" }}>Detalle de Venta</Text>
+          <Feather name="arrow-left" size={20} color={colors.text} />
+          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Detalle de Venta</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setModalTicket(true)}
-          style={{ backgroundColor: "#2a2a2a", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 0.5, borderColor: "#333" }}
+          style={{ backgroundColor: colors.bgChip, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 0.5, borderColor: colors.borderLight }}
         >
           <Text style={{ color: "#F97316", fontSize: 12, fontWeight: "500" }}>Ver Ticket</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
-        <View style={{ backgroundColor: "#1e1e1e", borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: "#2a2a2a", gap: 12 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: "#333", paddingBottom: 12 }}>
-            <Text style={{ color: "#888", fontSize: 13 }}>Fecha y Hora</Text>
-            <Text style={{ color: "#fff", fontSize: 13 }}>{formatFechaHora(detalle.venta.created_at)}</Text>
+        <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border, gap: 12 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 12 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 13 }}>Fecha y Hora</Text>
+            <Text style={{ color: colors.text, fontSize: 13 }}>{formatFechaHora(detalle.venta.created_at)}</Text>
           </View>
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: "#333", paddingBottom: 12 }}>
-            <Text style={{ color: "#888", fontSize: 13 }}>Método de Pago</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 12 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 13 }}>Método de Pago</Text>
             <View
               style={{
-                backgroundColor: detalle.venta.metodoPago === "efectivo" ? "#001a10" : "#001a2a",
+                backgroundColor: detalle.venta.metodoPago === "efectivo" ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#001a2a" : "#e6f4ff"),
                 paddingHorizontal: 8,
                 paddingVertical: 2,
                 borderRadius: 10,
@@ -118,26 +121,26 @@ export default function DetalleVenta() {
           </View>
 
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            <Text style={{ color: "#888", fontSize: 13 }}>ID Venta</Text>
-            <Text style={{ color: "#555", fontSize: 11 }}>{detalle.venta.id.split("-")[0]}</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13 }}>ID Venta</Text>
+            <Text style={{ color: colors.borderLight, fontSize: 11 }}>{detalle.venta.id.split("-")[0]}</Text>
           </View>
         </View>
 
-        <View style={{ backgroundColor: "#1e1e1e", borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: "#2a2a2a", gap: 12 }}>
-          <Text style={{ fontSize: 14, fontWeight: "500", color: "#fff", marginBottom: 8 }}>Artículos Vendidos</Text>
+        <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border, gap: 12 }}>
+          <Text style={{ fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: 8 }}>Artículos Vendidos</Text>
           
           {detalle.itemsConNombre.map((it, idx) => (
             <View key={idx} style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: "#ccc", fontSize: 13 }}>{it.cantidad}x {it.nombre}</Text>
-                <Text style={{ color: "#888", fontSize: 11 }}>${it.precioUnitario.toFixed(2)} c/u</Text>
+                <Text style={{ color: colors.textLight, fontSize: 13 }}>{it.cantidad}x {it.nombre}</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 11 }}>${it.precioUnitario.toFixed(2)} c/u</Text>
               </View>
-              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "500" }}>${it.subtotal.toFixed(2)}</Text>
+              <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>${it.subtotal.toFixed(2)}</Text>
             </View>
           ))}
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 0.5, borderTopColor: "#333", paddingTop: 16, marginTop: 8 }}>
-            <Text style={{ color: "#fff", fontSize: 16, fontWeight: "500" }}>Total</Text>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 0.5, borderTopColor: colors.border, paddingTop: 16, marginTop: 8 }}>
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: "500" }}>Total</Text>
             <Text style={{ color: "#F97316", fontSize: 18, fontWeight: "bold" }}>${detalle.venta.total.toFixed(2)}</Text>
           </View>
         </View>
@@ -145,10 +148,10 @@ export default function DetalleVenta() {
 
       {/* Modal Ticket */}
       <Modal visible={modalTicket} transparent animationType="fade" onRequestClose={() => setModalTicket(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center", padding: 24 }}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "center", alignItems: "center", padding: 24 }}>
           <View
             style={{
-              backgroundColor: "#fffff8", // Color papel
+              backgroundColor: "#fffff8",
               width: "100%",
               maxWidth: 320,
               padding: 24,
@@ -192,13 +195,13 @@ export default function DetalleVenta() {
             onPress={() => setModalTicket(false)}
             style={{
               marginTop: 24,
-              backgroundColor: "#2a2a2a",
+              backgroundColor: colors.bgChip,
               paddingHorizontal: 24,
               paddingVertical: 12,
               borderRadius: 20,
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "500" }}>Cerrar</Text>
+            <Text style={{ color: colors.text, fontWeight: "500" }}>Cerrar</Text>
           </TouchableOpacity>
         </View>
       </Modal>
