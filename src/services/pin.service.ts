@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import CryptoJS from "crypto-js";
 
 const PIN_KEY = "pin_hash";
+const DEFAULT_PIN_HASH = "9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0";
 
 export function hashPin(pin: string): string {
   return CryptoJS.SHA256(pin).toString();
@@ -18,10 +19,13 @@ export async function verificarPin(pin: string): Promise<boolean> {
 
   const stored = result[0]?.valor ?? "";
 
-  // Si no hay PIN configurado, cualquier PIN de 4 dígitos pasa (primer uso)
-  if (!stored) return pin.length === 4;
+  if (!stored) return false;
 
   return hashPin(pin) === stored;
+}
+
+export function esPinDefault(pin: string): boolean {
+  return hashPin(pin) === DEFAULT_PIN_HASH;
 }
 
 export async function cambiarPin(pinNuevo: string): Promise<void> {

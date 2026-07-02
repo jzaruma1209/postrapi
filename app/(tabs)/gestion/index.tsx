@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import PinModal from "../../../src/components/shared/PinModal";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
@@ -41,7 +42,7 @@ export default function GestionIndex() {
   const colors = useColors();
   const isDark = useThemeStore((s) => s.isDark);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(true);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   const fechaHoyStr = useMemo(() => {
     const fecha = new Date();
@@ -49,6 +50,16 @@ export default function GestionIndex() {
     const formateada = fecha.toLocaleDateString('es-ES', opciones);
     return formateada.charAt(0).toUpperCase() + formateada.slice(1);
   }, []);
+
+  // Cada vez que el usuario enfoca esta pantalla (ya sea la primera vez o
+  // al volver del tab de ventas/pedidos), se resetea la autenticación
+  // y se vuelve a mostrar el modal de PIN.
+  useFocusEffect(
+    useCallback(() => {
+      setIsAuthenticated(false);
+      setShowPinModal(true);
+    }, [])
+  );
 
   const handlePinSuccess = () => {
     setShowPinModal(false);
@@ -64,7 +75,8 @@ export default function GestionIndex() {
     }
   };
 
-  if (!isAuthenticated && showPinModal) {
+  // Mientras no está autenticado, mostrar pantalla de bloqueo con el modal
+  if (!isAuthenticated) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <PinModal

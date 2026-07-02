@@ -151,8 +151,14 @@ export async function runMigrations(): Promise<void> {
       ('moneda', '$'),
       ('stock_minimo_default', '1'),
       ('impresora_mac', ''),
-      ('pin_hash', ''),
+      ('pin_hash', '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0'),
       ('tema', 'oscuro');
+  `);
+
+  // Actualizar pin_hash vacío de instalaciones existentes
+  await db.run(sql`
+    UPDATE configuracion SET valor = '9af15b336e6a9619928537df30b2e6a2376569fcf9d7e773eccede65606529a0'
+    WHERE clave = 'pin_hash' AND (valor IS NULL OR valor = '');
   `);
 
   console.log("✅ Migrations ejecutadas correctamente");

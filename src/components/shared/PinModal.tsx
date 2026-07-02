@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, Vibration
 } from "react-native";
-import { verificarPin } from "../../services/pin.service";
+import { verificarPin, esPinDefault } from "../../services/pin.service";
 import { useColors, useThemeStore } from "../../stores/useThemeStore";
 
 interface PinModalProps {
@@ -25,11 +25,13 @@ export default function PinModal({
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [verificando, setVerificando] = useState(false);
+  // Fase: "pin" = ingresando PIN | "advertencia" = mostrando aviso de PIN default
+  const [fase, setFase] = useState<"pin" | "advertencia">("pin");
 
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const handleTecla = async (tecla: string) => {
-    if (verificando) return;
+    if (verificando || fase === "advertencia") return;
 
     if (tecla === "⌫") {
       setPin((prev) => prev.slice(0, -1));
@@ -51,7 +53,13 @@ export default function PinModal({
       if (ok) {
         setPin("");
         setError(false);
-        onSuccess();
+        // Si el PIN es el default (0000), mostrar advertencia antes de dar acceso
+        if (esPinDefault(nuevoPin)) {
+          setFase("advertencia");
+        } else {
+          // PIN personalizado → dar acceso inmediatamente
+          onSuccess();
+        }
       } else {
         Vibration.vibrate(300);
         setError(true);
@@ -63,9 +71,16 @@ export default function PinModal({
     }
   };
 
+  const handleEntendido = () => {
+    // El usuario leyó la advertencia → ahora sí dar acceso
+    setFase("pin");
+    onSuccess();
+  };
+
   const handleCancel = () => {
     setPin("");
     setError(false);
+    setFase("pin");
     onCancel();
   };
 
@@ -73,55 +88,98 @@ export default function PinModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleCancel}>
       <View style={styles.overlay}>
         <View style={styles.card}>
-          <Text style={styles.titulo}>{titulo}</Text>
 
-          {/* Indicador de dígitos */}
-          <View style={styles.dotsRow}>
-            {[0, 1, 2, 3].map((i) => (
-              <View
-                key={i}
-                style={[
-                  styles.dot,
-                  pin.length > i && styles.dotFilled,
-                  error && styles.dotError,
-                ]}
-              />
-            ))}
-          </View>
+          {/* ── FASE: ADVERTENCIA ── */}
+          {fase === "advertencia" ? (
+            <>
+              {/* Ícono de candado */}
+              <View style={styles.iconoCirculo}>
+                <Text style={styles.iconoEmoji}>🔒</Text>
+              </View>
 
-          {error && (
-            <Text style={styles.errorText}>PIN incorrecto</Text>
-          )}
+              <Text style={styles.advertenciaTitulo}>PIN por defecto activo</Text>
 
-          {/* Teclado numérico */}
-          <View style={styles.teclado}>
-            {TECLAS.map((tecla, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.tecla,
-                  tecla === "" && styles.teclaVacia,
-                  tecla === "⌫" && styles.teclaDelete,
-                ]}
-                onPress={() => handleTecla(tecla)}
-                disabled={tecla === ""}
-                activeOpacity={0.7}
-              >
-                <Text
-                  style={[
-                    styles.teclaTexto,
-                    tecla === "⌫" && styles.teclaDeleteTexto,
-                  ]}
-                >
-                  {tecla}
+              <View style={styles.warningBoxGrande}>
+                <Text style={styles.warningTextoGrande}>
+                  Debes cambiar el PIN por seguridad
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+                <Text style={styles.warningSubtextoGrande}>
+                  Ve a Gestión {">"} PIN y Acceso {">"} Cambiar PIN
+                </Text>
+              </View>
 
-          <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
-            <Text style={styles.cancelTexto}>Cancelar</Text>
-          </TouchableOpacity>
+              <Text style={styles.advertenciaDesc}>
+                Tu PIN actual es <Text style={styles.bold}>0000</Text> (el que viene de fábrica).
+                Cualquier persona puede acceder. Cámbialo cuanto antes.
+              </Text>
+
+              <TouchableOpacity
+                style={styles.btnEntendido}
+                onPress={handleEntendido}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.btnEntendidoTexto}>Entendido, entrar</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+
+            /* ── FASE: INGRESAR PIN ── */
+            <>
+              <Text style={styles.titulo}>{titulo}</Text>
+
+              {/* Indicador de dígitos */}
+              <View style={styles.dotsRow}>
+                {[0, 1, 2, 3].map((i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      pin.length > i && styles.dotFilled,
+                      error && styles.dotError,
+                    ]}
+                  />
+                ))}
+              </View>
+
+              {error && (
+                <Text style={styles.errorText}>PIN incorrecto</Text>
+              )}
+
+              {verificando && (
+                <Text style={styles.verificandoText}>Verificando...</Text>
+              )}
+
+              {/* Teclado numérico */}
+              <View style={styles.teclado}>
+                {TECLAS.map((tecla, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.tecla,
+                      tecla === "" && styles.teclaVacia,
+                      tecla === "⌫" && styles.teclaDelete,
+                    ]}
+                    onPress={() => handleTecla(tecla)}
+                    disabled={tecla === "" || verificando}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.teclaTexto,
+                        tecla === "⌫" && styles.teclaDeleteTexto,
+                      ]}
+                    >
+                      {tecla}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
+                <Text style={styles.cancelTexto}>Cancelar</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </Modal>
@@ -177,6 +235,11 @@ const createStyles = (colors: ReturnType<typeof useColors>, isDark: boolean) =>
       fontSize: 12,
       marginBottom: 8,
     },
+    verificandoText: {
+      color: colors.textMuted,
+      fontSize: 12,
+      marginBottom: 8,
+    },
     teclado: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -215,5 +278,76 @@ const createStyles = (colors: ReturnType<typeof useColors>, isDark: boolean) =>
     cancelTexto: {
       color: colors.textMuted,
       fontSize: 14,
+    },
+    // ── Estilos de advertencia ──────────────────────────────
+    iconoCirculo: {
+      width: 60,
+      height: 60,
+      borderRadius: 30,
+      backgroundColor: isDark ? "#2a1a00" : "#fff4e6",
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: "#F9731640",
+    },
+    iconoEmoji: {
+      fontSize: 28,
+    },
+    advertenciaTitulo: {
+      color: "#F97316",
+      fontSize: 16,
+      fontWeight: "700",
+      marginBottom: 14,
+      textAlign: "center",
+    },
+    warningBoxGrande: {
+      backgroundColor: isDark ? "#2a1a00" : "#fff4e6",
+      borderRadius: 12,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
+      marginBottom: 14,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: "#F9731660",
+      width: "100%",
+    },
+    warningTextoGrande: {
+      color: "#F97316",
+      fontSize: 13,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    warningSubtextoGrande: {
+      color: "#F97316",
+      fontSize: 12,
+      fontWeight: "400",
+      textAlign: "center",
+      marginTop: 4,
+    },
+    advertenciaDesc: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textAlign: "center",
+      lineHeight: 18,
+      marginBottom: 20,
+      paddingHorizontal: 4,
+    },
+    bold: {
+      fontWeight: "700",
+      color: colors.text,
+    },
+    btnEntendido: {
+      backgroundColor: "#F97316",
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 32,
+      width: "100%",
+      alignItems: "center",
+    },
+    btnEntendidoTexto: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "700",
     },
   });
