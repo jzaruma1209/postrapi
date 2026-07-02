@@ -16,8 +16,11 @@ import { v4 as uuidv4 } from "uuid";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, Producto } from "../../../src/db/schema";
+import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 export default function GestionProductos() {
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const router = useRouter();
   const [listaProductos, setListaProductos] = useState<Producto[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -125,7 +128,7 @@ export default function GestionProductos() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#141414" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -135,12 +138,12 @@ export default function GestionProductos() {
           paddingHorizontal: 16,
           paddingTop: 48,
           paddingBottom: 16,
-          backgroundColor: "#141414",
+          backgroundColor: colors.bg,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Feather name="arrow-left" size={20} color="#fff" />
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#ffffff" }}>Productos</Text>
+          <Feather name="arrow-left" size={20} color={colors.text} />
+          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Productos</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -156,12 +159,12 @@ export default function GestionProductos() {
           <View
             key={prod.id}
             style={{
-              backgroundColor: "#1e1e1e",
+              backgroundColor: colors.bgCard,
               borderRadius: 14,
               borderWidth: 0.5,
-              borderColor: "#2a2a2a",
+              borderColor: colors.border,
               borderLeftWidth: 3,
-              borderLeftColor: prod.activo === 1 ? "#22c55e" : "#555555",
+              borderLeftColor: prod.activo === 1 ? "#22c55e" : colors.borderLight,
               padding: 12,
               flexDirection: "row",
               alignItems: "center",
@@ -169,7 +172,7 @@ export default function GestionProductos() {
             }}
           >
             <View>
-              <Text style={{ fontSize: 14, fontWeight: "500", color: "#fff", marginBottom: 4 }}>
+              <Text style={{ fontSize: 14, fontWeight: "500", color: colors.text, marginBottom: 4 }}>
                 {prod.nombre}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
@@ -178,13 +181,13 @@ export default function GestionProductos() {
                 </Text>
                 <View
                   style={{
-                    backgroundColor: prod.activo === 1 ? "#001a10" : "#2a2a2a",
+                    backgroundColor: prod.activo === 1 ? (isDark ? "#001a10" : "#e6f7e6") : colors.bgChip,
                     paddingHorizontal: 8,
                     paddingVertical: 2,
                     borderRadius: 20,
                   }}
                 >
-                  <Text style={{ fontSize: 10, color: prod.activo === 1 ? "#22c55e" : "#888888", fontWeight: "500" }}>
+                  <Text style={{ fontSize: 10, color: prod.activo === 1 ? "#22c55e" : colors.textMuted, fontWeight: "500" }}>
                     {prod.activo === 1 ? "Activo" : "Inactivo"}
                   </Text>
                 </View>
@@ -192,13 +195,13 @@ export default function GestionProductos() {
             </View>
 
             <TouchableOpacity onPress={() => mostrarOpciones(prod)} style={{ padding: 8 }}>
-              <Feather name="more-vertical" size={20} color="#ccc" />
+              <Feather name="more-vertical" size={20} color={colors.textLight} />
             </TouchableOpacity>
           </View>
         ))}
 
         {listaProductos.length === 0 && (
-          <Text style={{ color: "#888", textAlign: "center", marginTop: 40 }}>
+          <Text style={{ color: colors.textMuted, textAlign: "center", marginTop: 40 }}>
             No hay productos registrados
           </Text>
         )}
@@ -206,62 +209,62 @@ export default function GestionProductos() {
 
       {/* Modal Formulario */}
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" }}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View
             style={{
-              backgroundColor: "#1e1e1e",
+              backgroundColor: colors.bgCard,
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               padding: 24,
               minHeight: 400,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: "500", color: "#fff", marginBottom: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: "500", color: colors.text, marginBottom: 20 }}>
               {editando ? "Editar Producto" : "Nuevo Producto"}
             </Text>
 
             <View style={{ gap: 16 }}>
               <View>
-                <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Nombre</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Nombre</Text>
                 <TextInput
                   value={nombre}
                   onChangeText={setNombre}
                   style={{
-                    backgroundColor: "#2a2a2a",
-                    color: "#fff",
+                    backgroundColor: colors.bgInput,
+                    color: colors.text,
                     borderRadius: 10,
                     padding: 12,
                     fontSize: 14,
                   }}
-                  placeholderTextColor="#666"
+                  placeholderTextColor={colors.textMuted}
                   placeholder="Ej. Hamburguesa Clásica"
                 />
               </View>
 
               <View>
-                <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Precio</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Precio</Text>
                 <TextInput
                   value={precio}
                   onChangeText={setPrecio}
                   keyboardType="numeric"
                   style={{
-                    backgroundColor: "#2a2a2a",
-                    color: "#fff",
+                    backgroundColor: colors.bgInput,
+                    color: colors.text,
                     borderRadius: 10,
                     padding: 12,
                     fontSize: 14,
                   }}
-                  placeholderTextColor="#666"
+                  placeholderTextColor={colors.textMuted}
                   placeholder="Ej. 1500"
                 />
               </View>
 
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                <Text style={{ color: "#fff", fontSize: 14 }}>Producto Activo</Text>
+                <Text style={{ color: colors.text, fontSize: 14 }}>Producto Activo</Text>
                 <Switch
                   value={activo}
                   onValueChange={setActivo}
-                  trackColor={{ false: "#555", true: "#F97316" }}
+                  trackColor={{ false: isDark ? "#555" : "#ccc", true: "#F97316" }}
                   thumbColor="#fff"
                 />
               </View>
@@ -274,13 +277,13 @@ export default function GestionProductos() {
                   flex: 1,
                   backgroundColor: "transparent",
                   borderWidth: 1,
-                  borderColor: "#555",
+                  borderColor: colors.borderLight,
                   padding: 14,
                   borderRadius: 10,
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: "#ccc", fontWeight: "500" }}>Cancelar</Text>
+                <Text style={{ color: colors.textLight, fontWeight: "500" }}>Cancelar</Text>
               </TouchableOpacity>
               
               <TouchableOpacity

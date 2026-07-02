@@ -14,10 +14,13 @@ import { v4 as uuidv4 } from "uuid";
 import { eq, and } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, ingredientes, recetas, Producto, Ingrediente, Receta } from "../../../src/db/schema";
+import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 type RecetaConIngrediente = Receta & { ingredienteNombre: string; ingredienteUnidad: string };
 
 export default function GestionRecetas() {
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const router = useRouter();
   
   const [listaProductos, setListaProductos] = useState<Producto[]>([]);
@@ -128,7 +131,7 @@ export default function GestionRecetas() {
   const ingredienteInfo = listaIngredientes.find(i => i.id === ingredienteSeleccionado);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#141414" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -137,12 +140,12 @@ export default function GestionRecetas() {
           paddingHorizontal: 16,
           paddingTop: 48,
           paddingBottom: 16,
-          backgroundColor: "#141414",
+          backgroundColor: colors.bg,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Feather name="arrow-left" size={20} color="#fff" />
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#ffffff" }}>Recetas</Text>
+          <Feather name="arrow-left" size={20} color={colors.text} />
+          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Recetas</Text>
         </TouchableOpacity>
       </View>
 
@@ -155,10 +158,10 @@ export default function GestionRecetas() {
             <View
               key={prod.id}
               style={{
-                backgroundColor: "#1e1e1e",
+                backgroundColor: colors.bgCard,
                 borderRadius: 14,
                 borderWidth: 0.5,
-                borderColor: "#2a2a2a",
+                borderColor: colors.border,
                 overflow: "hidden",
               }}
             >
@@ -173,24 +176,24 @@ export default function GestionRecetas() {
                 }}
               >
                 <View>
-                  <Text style={{ fontSize: 14, fontWeight: "500", color: "#fff" }}>
+                  <Text style={{ fontSize: 14, fontWeight: "500", color: colors.text }}>
                     {prod.nombre}
                   </Text>
-                  <Text style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>
                     {ingredientesProd.length} ingredientes vinculados
                   </Text>
                 </View>
-                <Feather name={expandido ? "chevron-up" : "chevron-down"} size={20} color="#888" />
+                <Feather name={expandido ? "chevron-up" : "chevron-down"} size={20} color={colors.textMuted} />
               </TouchableOpacity>
 
               {expandido && (
                 <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 8 }}>
-                  <View style={{ height: 1, backgroundColor: "#2a2a2a", marginBottom: 8 }} />
+                  <View style={{ height: 1, backgroundColor: colors.border, marginBottom: 8 }} />
                   
                   {ingredientesProd.map((r) => (
-                    <View key={r.id} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#2a2a2a", padding: 10, borderRadius: 8 }}>
+                    <View key={r.id} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: colors.bgChip, padding: 10, borderRadius: 8 }}>
                       <View>
-                        <Text style={{ fontSize: 13, color: "#fff" }}>{r.ingredienteNombre}</Text>
+                        <Text style={{ fontSize: 13, color: colors.text }}>{r.ingredienteNombre}</Text>
                         <Text style={{ fontSize: 11, color: "#F97316", fontWeight: "500" }}>
                           {r.cantidad} {r.ingredienteUnidad}
                         </Text>
@@ -221,7 +224,7 @@ export default function GestionRecetas() {
         })}
 
         {listaProductos.length === 0 && (
-          <Text style={{ color: "#888", textAlign: "center", marginTop: 40 }}>
+          <Text style={{ color: colors.textMuted, textAlign: "center", marginTop: 40 }}>
             No hay productos activos para vincular.
           </Text>
         )}
@@ -229,25 +232,25 @@ export default function GestionRecetas() {
 
       {/* Modal Formulario */}
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "flex-end" }}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View
             style={{
-              backgroundColor: "#1e1e1e",
+              backgroundColor: colors.bgCard,
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               padding: 24,
               minHeight: 400,
             }}
           >
-            <Text style={{ fontSize: 18, fontWeight: "500", color: "#fff", marginBottom: 20 }}>
+            <Text style={{ fontSize: 18, fontWeight: "500", color: colors.text, marginBottom: 20 }}>
               Vincular Ingrediente
             </Text>
 
             <View style={{ gap: 16 }}>
               {/* Selector Custom Simple (ScrollView con TouchableOpacity) */}
               <View>
-                <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Selecciona Ingrediente</Text>
-                <View style={{ height: 120, backgroundColor: "#2a2a2a", borderRadius: 10, overflow: "hidden" }}>
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Selecciona Ingrediente</Text>
+                <View style={{ height: 120, backgroundColor: colors.bgInput, borderRadius: 10, overflow: "hidden" }}>
                   <ScrollView nestedScrollEnabled>
                     {listaIngredientes.map(ing => (
                       <TouchableOpacity
@@ -257,21 +260,21 @@ export default function GestionRecetas() {
                           padding: 12,
                           backgroundColor: ingredienteSeleccionado === ing.id ? "#F97316" : "transparent",
                           borderBottomWidth: 1,
-                          borderBottomColor: "#333",
+                          borderBottomColor: colors.borderLight,
                         }}
                       >
-                        <Text style={{ color: "#fff", fontSize: 14 }}>{ing.nombre} ({ing.unidad})</Text>
+                        <Text style={{ color: ingredienteSeleccionado === ing.id ? "#fff" : colors.text, fontSize: 14 }}>{ing.nombre} ({ing.unidad})</Text>
                       </TouchableOpacity>
                     ))}
                     {listaIngredientes.length === 0 && (
-                      <Text style={{ color: "#888", padding: 12 }}>No hay ingredientes registrados.</Text>
+                      <Text style={{ color: colors.textMuted, padding: 12 }}>No hay ingredientes registrados.</Text>
                     )}
                   </ScrollView>
                 </View>
               </View>
 
               <View>
-                <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>
                   Cantidad {ingredienteInfo ? `(en ${ingredienteInfo.unidad})` : ""}
                 </Text>
                 <TextInput
@@ -279,13 +282,13 @@ export default function GestionRecetas() {
                   onChangeText={setCantidad}
                   keyboardType="numeric"
                   style={{
-                    backgroundColor: "#2a2a2a",
-                    color: "#fff",
+                    backgroundColor: colors.bgInput,
+                    color: colors.text,
                     borderRadius: 10,
                     padding: 12,
                     fontSize: 14,
                   }}
-                  placeholderTextColor="#666"
+                  placeholderTextColor={colors.textMuted}
                   placeholder="Ej. 1.5"
                 />
               </View>
@@ -298,13 +301,13 @@ export default function GestionRecetas() {
                   flex: 1,
                   backgroundColor: "transparent",
                   borderWidth: 1,
-                  borderColor: "#555",
+                  borderColor: colors.borderLight,
                   padding: 14,
                   borderRadius: 10,
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: "#ccc", fontWeight: "500" }}>Cancelar</Text>
+                <Text style={{ color: colors.textLight, fontWeight: "500" }}>Cancelar</Text>
               </TouchableOpacity>
               
               <TouchableOpacity

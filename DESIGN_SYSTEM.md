@@ -74,7 +74,7 @@ Border radius ícono:    8px
 - Fijo en la parte inferior
 - Background: #1a1a1a
 - Border top: 0.5px solid #2a2a2a
-- 5 tabs: Resumen, Ventas, Pedidos, Bodega, Gestión
+- 6 tabs: Resumen, Ventas, Pedidos, Bodega, Gastos, Gestión
 - Tab inactivo: ícono + label color #555
 - Tab activo: ícono + label color #F97316
 - Íconos sugeridos (usar librería de íconos de Expo/RN):
@@ -82,6 +82,7 @@ Border radius ícono:    8px
   - Ventas → ShoppingCart
   - Pedidos → ClipboardList
   - Bodega → Package
+  - Gastos → CreditCard
   - Gestión → Settings
 
 ---

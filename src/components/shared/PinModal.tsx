@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, Vibration
 } from "react-native";
 import { verificarPin } from "../../services/pin.service";
+import { useColors, useThemeStore } from "../../stores/useThemeStore";
 
 interface PinModalProps {
   visible: boolean;
@@ -19,9 +20,13 @@ export default function PinModal({
   onSuccess,
   onCancel,
 }: PinModalProps) {
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [verificando, setVerificando] = useState(false);
+
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const handleTecla = async (tecla: string) => {
     if (verificando) return;
@@ -123,91 +128,92 @@ export default function PinModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  card: {
-    backgroundColor: "#1e1e1e",
-    borderRadius: 20,
-    borderWidth: 0.5,
-    borderColor: "#2a2a2a",
-    padding: 24,
-    width: 300,
-    alignItems: "center",
-  },
-  titulo: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 20,
-  },
-  dotsRow: {
-    flexDirection: "row",
-    gap: 16,
-    marginBottom: 8,
-  },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: "#555",
-    backgroundColor: "transparent",
-  },
-  dotFilled: {
-    backgroundColor: "#F97316",
-    borderColor: "#F97316",
-  },
-  dotError: {
-    backgroundColor: "#ef4444",
-    borderColor: "#ef4444",
-  },
-  errorText: {
-    color: "#ef4444",
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  teclado: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    width: 240,
-    gap: 10,
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  tecla: {
-    width: 70,
-    height: 60,
-    backgroundColor: "#2a2a2a",
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  teclaVacia: {
-    backgroundColor: "transparent",
-  },
-  teclaDelete: {
-    backgroundColor: "#2a2a2a",
-  },
-  teclaTexto: {
-    color: "#ffffff",
-    fontSize: 22,
-    fontWeight: "400",
-  },
-  teclaDeleteTexto: {
-    color: "#F97316",
-    fontSize: 20,
-  },
-  cancelBtn: {
-    marginTop: 4,
-    padding: 10,
-  },
-  cancelTexto: {
-    color: "#888",
-    fontSize: 14,
-  },
-});
+const createStyles = (colors: ReturnType<typeof useColors>, isDark: boolean) =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: colors.overlay,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    card: {
+      backgroundColor: colors.bgCard,
+      borderRadius: 20,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      padding: 24,
+      width: 300,
+      alignItems: "center",
+    },
+    titulo: {
+      color: colors.text,
+      fontSize: 16,
+      fontWeight: "500",
+      marginBottom: 20,
+    },
+    dotsRow: {
+      flexDirection: "row",
+      gap: 16,
+      marginBottom: 8,
+    },
+    dot: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 1.5,
+      borderColor: colors.textMuted,
+      backgroundColor: "transparent",
+    },
+    dotFilled: {
+      backgroundColor: "#F97316",
+      borderColor: "#F97316",
+    },
+    dotError: {
+      backgroundColor: "#ef4444",
+      borderColor: "#ef4444",
+    },
+    errorText: {
+      color: "#ef4444",
+      fontSize: 12,
+      marginBottom: 8,
+    },
+    teclado: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      width: 240,
+      gap: 10,
+      marginTop: 16,
+      marginBottom: 16,
+    },
+    tecla: {
+      width: 70,
+      height: 60,
+      backgroundColor: colors.bgInput,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    teclaVacia: {
+      backgroundColor: "transparent",
+    },
+    teclaDelete: {
+      backgroundColor: colors.bgInput,
+    },
+    teclaTexto: {
+      color: colors.text,
+      fontSize: 22,
+      fontWeight: "400",
+    },
+    teclaDeleteTexto: {
+      color: "#F97316",
+      fontSize: 20,
+    },
+    cancelBtn: {
+      marginTop: 4,
+      padding: 10,
+    },
+    cancelTexto: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+  });

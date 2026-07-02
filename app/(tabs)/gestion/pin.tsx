@@ -10,8 +10,11 @@ import {
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { verificarPin, cambiarPin } from "../../../src/services/pin.service";
+import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 export default function GestionPin() {
+  const colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const router = useRouter();
 
   const [pinActual, setPinActual] = useState("");
@@ -52,7 +55,7 @@ export default function GestionPin() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#141414" }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -61,21 +64,21 @@ export default function GestionPin() {
           paddingHorizontal: 16,
           paddingTop: 48,
           paddingBottom: 16,
-          backgroundColor: "#141414",
+          backgroundColor: colors.bg,
         }}
       >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Feather name="arrow-left" size={20} color="#fff" />
-          <Text style={{ fontSize: 16, fontWeight: "500", color: "#ffffff" }}>PIN y Acceso</Text>
+          <Feather name="arrow-left" size={20} color={colors.text} />
+          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>PIN y Acceso</Text>
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
         <View
           style={{
-            backgroundColor: "#1a1a00",
+            backgroundColor: isDark ? "#1a1a00" : "#fff9e6",
             borderWidth: 0.5,
-            borderColor: "#333",
+            borderColor: colors.border,
             borderRadius: 10,
             padding: 12,
             flexDirection: "row",
@@ -84,14 +87,14 @@ export default function GestionPin() {
           }}
         >
           <Feather name="lock" size={16} color="#F97316" />
-          <Text style={{ fontSize: 12, color: "#aaa", flex: 1 }}>
+          <Text style={{ fontSize: 12, color: colors.textMuted, flex: 1 }}>
             El PIN de supervisor se requiere para acceder a la gestión, aplicar descuentos o modificar el stock.
           </Text>
         </View>
 
-        <View style={{ backgroundColor: "#1e1e1e", borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: "#2a2a2a", gap: 16 }}>
+        <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border, gap: 16 }}>
           <View>
-            <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>PIN Actual</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>PIN Actual</Text>
             <TextInput
               value={pinActual}
               onChangeText={setPinActual}
@@ -99,20 +102,20 @@ export default function GestionPin() {
               secureTextEntry
               maxLength={4}
               style={{
-                backgroundColor: "#2a2a2a",
-                color: "#fff",
+                backgroundColor: colors.bgInput,
+                color: colors.text,
                 borderRadius: 10,
                 padding: 12,
                 fontSize: 14,
                 letterSpacing: 4,
               }}
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               placeholder="••••"
             />
           </View>
 
           <View>
-            <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Nuevo PIN (4 dígitos)</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Nuevo PIN (4 dígitos)</Text>
             <TextInput
               value={pinNuevo}
               onChangeText={setPinNuevo}
@@ -120,20 +123,20 @@ export default function GestionPin() {
               secureTextEntry
               maxLength={4}
               style={{
-                backgroundColor: "#2a2a2a",
-                color: "#fff",
+                backgroundColor: colors.bgInput,
+                color: colors.text,
                 borderRadius: 10,
                 padding: 12,
                 fontSize: 14,
                 letterSpacing: 4,
               }}
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               placeholder="••••"
             />
           </View>
 
           <View>
-            <Text style={{ color: "#888", fontSize: 12, marginBottom: 8 }}>Confirmar Nuevo PIN</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Confirmar Nuevo PIN</Text>
             <TextInput
               value={confirmarPin}
               onChangeText={setConfirmarPin}
@@ -141,14 +144,14 @@ export default function GestionPin() {
               secureTextEntry
               maxLength={4}
               style={{
-                backgroundColor: "#2a2a2a",
-                color: "#fff",
+                backgroundColor: colors.bgInput,
+                color: colors.text,
                 borderRadius: 10,
                 padding: 12,
                 fontSize: 14,
                 letterSpacing: 4,
               }}
-              placeholderTextColor="#666"
+              placeholderTextColor={colors.textMuted}
               placeholder="••••"
             />
           </View>
