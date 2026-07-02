@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { pedidos, pedidoItems, productos } from "../db/schema";
-import { eq, and, ne, desc } from "drizzle-orm";
+import { eq, and, ne, desc, gte, lte } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
 import { nowISO, todayDate } from "../utils/dates";
 import { crearVenta } from "./ventas.service";
@@ -119,6 +119,11 @@ export async function getPedidosHoy() {
   return await db
     .select()
     .from(pedidos)
-    .where(eq(pedidos.created_at, hoy))
+    .where(
+      and(
+        gte(pedidos.created_at, `${hoy}T00:00:00.000Z`),
+        lte(pedidos.created_at, `${hoy}T23:59:59.999Z`)
+      )
+    )
     .orderBy(desc(pedidos.created_at));
 }

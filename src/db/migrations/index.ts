@@ -151,7 +151,8 @@ export async function runMigrations(): Promise<void> {
       ('moneda', '$'),
       ('stock_minimo_default', '1'),
       ('impresora_mac', ''),
-      ('pin_hash', '');
+      ('pin_hash', ''),
+      ('tema', 'oscuro');
   `);
 
   console.log("✅ Migrations ejecutadas correctamente");
