@@ -128,3 +128,11 @@ export async function getPedidosHoy() {
     )
     .orderBy(desc(pedidos.created_at));
 }
+
+export async function getPedidosPendientesCount(): Promise<number> {
+  const result = await db
+    .select()
+    .from(pedidos)
+    .where(eq(pedidos.estado, "pendiente"));
+  return result.length;
+}

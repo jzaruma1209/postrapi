@@ -99,17 +99,21 @@ export default function GastosIndex() {
   };
 
   const confirmarNuevoGasto = () => {
-    if (!concepto.trim() || !monto || isNaN(Number(monto))) {
+    const val = monto.replace(",", ".");
+    if (!concepto.trim() || !monto || isNaN(Number(val))) {
       Alert.alert("Error", "Concepto y Monto válido son obligatorios.");
       return;
     }
-    setShowPinModal(true);
+    setModalGasto(false);
+    setTimeout(() => {
+      setShowPinModal(true);
+    }, 400);
   };
 
   const handlePinSuccess = async () => {
     setShowPinModal(false);
     try {
-      await registrarGasto({ concepto, monto: Number(monto), categoria, fecha: fechaGasto });
+      await registrarGasto({ concepto, monto: Number(monto.replace(",", ".")), categoria, fecha: fechaGasto });
       setModalGasto(false);
       Alert.alert("Éxito", "Gasto registrado correctamente");
       cargarDatos();
@@ -294,7 +298,12 @@ export default function GastosIndex() {
           visible={showPinModal}
           titulo="Autorización de Gasto"
           onSuccess={handlePinSuccess}
-          onCancel={() => setShowPinModal(false)}
+          onCancel={() => {
+            setShowPinModal(false);
+            setTimeout(() => {
+              setModalGasto(true);
+            }, 400);
+          }}
         />
       )}
     </View>

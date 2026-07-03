@@ -65,25 +65,26 @@ export async function ajustarStock(params: {
 
   const diferencia = stockReal - ingrediente.stockActual;
 
-  await db.transaction(async (tx) => {
-    // Registrar movimiento
-    await tx.insert(movimientosInventario).values({
-      id: generateId(),
-      ingredienteId,
-      tipo: "ajuste",
-      cantidad: diferencia, // puede ser positivo o negativo
-      motivo,
-      referenciaId: null,
-      created_at: now,
-      synced: 0,
-    });
+  // Bypassing db.transaction temporalmente para evitar bug de expo-sqlite
+  const tx = db;
 
-    // Actualizar stock
-    await tx
-      .update(ingredientes)
-      .set({ stockActual: stockReal })
-      .where(eq(ingredientes.id, ingredienteId));
+  // Registrar movimiento
+  await tx.insert(movimientosInventario).values({
+    id: generateId(),
+    ingredienteId,
+    tipo: "ajuste",
+    cantidad: diferencia, // puede ser positivo o negativo
+    motivo,
+    referenciaId: null,
+    created_at: now,
+    synced: 0,
   });
+
+  // Actualizar stock
+  await tx
+    .update(ingredientes)
+    .set({ stockActual: stockReal })
+    .where(eq(ingredientes.id, ingredienteId));
 }
 
 // ─── HISTORIAL DE AJUSTES ─────────────────────────────────
@@ -118,36 +119,37 @@ export async function registrarCompra(params: {
   const { ingredienteId, cantidad, costoTotal, fecha } = params;
   const now = nowISO();
 
-  await db.transaction(async (tx) => {
-    // Registrar compra
-    await tx.insert(compras).values({
-      id: generateId(),
-      ingredienteId,
-      cantidad,
-      costoTotal,
-      fecha,
-      created_at: now,
-      synced: 0,
-    });
+  // Bypassing db.transaction temporalmente para evitar bug de expo-sqlite
+  const tx = db;
 
-    // Registrar movimiento de inventario
-    await tx.insert(movimientosInventario).values({
-      id: generateId(),
-      ingredienteId,
-      tipo: "compra",
-      cantidad, // positivo = entrada
-      motivo: null,
-      referenciaId: null,
-      created_at: now,
-      synced: 0,
-    });
-
-    // Actualizar stock
-    await tx
-      .update(ingredientes)
-      .set({ stockActual: sql`stock_actual + ${cantidad}` })
-      .where(eq(ingredientes.id, ingredienteId));
+  // Registrar compra
+  await tx.insert(compras).values({
+    id: generateId(),
+    ingredienteId,
+    cantidad,
+    costoTotal,
+    fecha,
+    created_at: now,
+    synced: 0,
   });
+
+  // Registrar movimiento de inventario
+  await tx.insert(movimientosInventario).values({
+    id: generateId(),
+    ingredienteId,
+    tipo: "compra",
+    cantidad, // positivo = entrada
+    motivo: null,
+    referenciaId: null,
+    created_at: now,
+    synced: 0,
+  });
+
+  // Actualizar stock
+  await tx
+    .update(ingredientes)
+    .set({ stockActual: sql`stock_actual + ${cantidad}` })
+    .where(eq(ingredientes.id, ingredienteId));
 }
 
 export async function getCompras(fecha?: string) {

@@ -14,7 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
-import { v4 as uuidv4 } from "uuid";
+import { generateId } from "../../../src/utils/uuid";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, Producto } from "../../../src/db/schema";
@@ -83,7 +83,7 @@ export default function GestionProductos() {
           .where(eq(productos.id, editando.id));
       } else {
         await db.insert(productos).values({
-          id: uuidv4(),
+          id: generateId(),
           nombre: nombre.trim(),
           precio: Number(precio),
           activo: activo ? 1 : 0,

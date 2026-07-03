@@ -1,7 +1,7 @@
 import { db } from "../db";
 import {
   ventas, ventaItems, pedidos, recetas, ingredientes,
-  movimientosInventario, cajaDiaria
+  movimientosInventario, cajaDiaria, gastos
 } from "../db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
@@ -201,6 +201,24 @@ export async function getCajaHoy() {
     .where(eq(cajaDiaria.fecha, hoy))
     .limit(1);
   return result[0] ?? null;
+}
+
+export async function getCajaAbierta() {
+  const result = await db
+    .select()
+    .from(cajaDiaria)
+    .where(sql`cerrada_at IS NULL`)
+    .orderBy(desc(cajaDiaria.created_at))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+export async function getTotalGastosFecha(fecha: string): Promise<number> {
+  const result = await db
+    .select({ total: sql<number>`COALESCE(SUM(monto), 0)` })
+    .from(gastos)
+    .where(eq(gastos.fecha, fecha));
+  return result[0]?.total ?? 0;
 }
 
 // ─── TOP PRODUCTOS DEL DÍA ────────────────────────────────

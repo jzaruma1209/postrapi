@@ -4,10 +4,13 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import {
   getCajaHoy,
+  getCajaAbierta,
   abrirCaja,
   cerrarCaja,
-  getVentasHoy,
+  getHistorialVentas,
+  getTotalGastosFecha,
 } from "../../../src/services/ventas.service";
+import { getPedidosPendientesCount } from "../../../src/services/pedidos.service";
 import PinModal from "../../../src/components/shared/PinModal";
 import type { CajaDiaria } from "../../../src/db/schema";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
@@ -20,6 +23,7 @@ export default function GestionCaja() {
   const [caja, setCaja] = useState<CajaDiaria | null>(null);
   const [totalEfectivo, setTotalEfectivo] = useState(0);
   const [totalTransferencia, setTotalTransferencia] = useState(0);
+  const [totalGastos, setTotalGastos] = useState(0);
 
   // Formularios
   const [montoInicial, setMontoInicial] = useState("");
@@ -30,19 +34,35 @@ export default function GestionCaja() {
 
   const cargarDatos = async () => {
     try {
-      const cajaHoy = await getCajaHoy();
-      setCaja(cajaHoy);
+      // Intentar cargar caja abierta (aunque sea de otro día)
+      let activeCaja = await getCajaAbierta();
+      if (!activeCaja) {
+        // Si no hay abierta, cargar la de hoy si ya existe
+        activeCaja = await getCajaHoy();
+      }
+      setCaja(activeCaja);
 
-      const ventas = await getVentasHoy();
-      let efec = 0;
-      let trans = 0;
-      ventas.forEach((v) => {
-        if (v.metodoPago === "efectivo") efec += v.total;
-        else if (v.metodoPago === "transferencia") trans += v.total;
-      });
+      if (activeCaja) {
+        // Cargar ventas del día de la caja
+        const ventasDia = await getHistorialVentas(activeCaja.fecha);
+        let efec = 0;
+        let trans = 0;
+        ventasDia.forEach((v) => {
+          if (v.metodoPago === "efectivo") efec += v.total;
+          else if (v.metodoPago === "transferencia") trans += v.total;
+        });
 
-      setTotalEfectivo(efec);
-      setTotalTransferencia(trans);
+        setTotalEfectivo(efec);
+        setTotalTransferencia(trans);
+
+        // Cargar gastos del día de la caja
+        const gts = await getTotalGastosFecha(activeCaja.fecha);
+        setTotalGastos(gts);
+      } else {
+        setTotalEfectivo(0);
+        setTotalTransferencia(0);
+        setTotalGastos(0);
+      }
     } catch (error) {
       console.error("Error al cargar caja:", error);
     }
@@ -55,12 +75,12 @@ export default function GestionCaja() {
   );
 
   const handleAbrirCaja = async () => {
-    if (!montoInicial || isNaN(Number(montoInicial))) {
+    if (!montoInicial || isNaN(Number(montoInicial.replace(",", ".")))) {
       Alert.alert("Error", "Ingresa un monto inicial válido.");
       return;
     }
     try {
-      await abrirCaja(Number(montoInicial));
+      await abrirCaja(Number(montoInicial.replace(",", ".")));
       cargarDatos();
     } catch (error) {
       console.error(error);
@@ -68,19 +88,42 @@ export default function GestionCaja() {
     }
   };
 
-  const confirmarCierreCaja = () => {
-    if (!montoContado || isNaN(Number(montoContado))) {
+  const confirmarCierreCaja = async () => {
+    if (!montoContado || isNaN(Number(montoContado.replace(",", ".")))) {
       Alert.alert("Error", "Ingresa el monto contado físico válido.");
       return;
     }
-    setShowPinModal(true);
+
+    try {
+      // 1. Comprobar pedidos pendientes antes de cerrar
+      const countPending = await getPedidosPendientesCount();
+      if (countPending > 0) {
+        Alert.alert(
+          "Pedidos Pendientes",
+          `Tienes ${countPending} pedido(s) pendiente(s) de entregar/cobrar. ¿Estás seguro de que deseas cerrar la caja con pedidos sin concluir?`,
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Cerrar de todos modos",
+              style: "destructive",
+              onPress: () => setShowPinModal(true),
+            },
+          ]
+        );
+      } else {
+        setShowPinModal(true);
+      }
+    } catch (error) {
+      console.error(error);
+      setShowPinModal(true);
+    }
   };
 
   const handlePinSuccess = async () => {
     setShowPinModal(false);
     if (!caja) return;
     try {
-      await cerrarCaja(caja.id, Number(montoContado));
+      await cerrarCaja(caja.id, Number(montoContado.replace(",", ".")));
       Alert.alert("Éxito", "La caja ha sido cerrada correctamente.");
       cargarDatos();
     } catch (error) {
@@ -89,8 +132,8 @@ export default function GestionCaja() {
     }
   };
 
-  const esperadoEnCaja = (caja?.montoInicial || 0) + totalEfectivo;
-  const contadoNum = Number(montoContado) || 0;
+  const esperadoEnCaja = (caja?.montoInicial || 0) + totalEfectivo - totalGastos;
+  const contadoNum = Number(montoContado.replace(",", ".")) || 0;
   const diferencia = contadoNum - esperadoEnCaja;
 
   return (
@@ -155,8 +198,11 @@ export default function GestionCaja() {
             {/* Resumen de Caja */}
             <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border, gap: 12 }}>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Resumen</Text>
-                {caja.cerradaAt && (
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Resumen de Caja</Text>
+                  <Text style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>Fecha de apertura: {caja.fecha}</Text>
+                </View>
+                {caja.cerrada_at && (
                   <View style={{ backgroundColor: isDark ? "#001a10" : "#e6f7e6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
                     <Text style={{ fontSize: 10, color: "#22c55e", fontWeight: "bold" }}>CERRADA</Text>
                   </View>
@@ -174,18 +220,23 @@ export default function GestionCaja() {
               </View>
 
               <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Gastos del día (Efectivo)</Text>
+                <Text style={{ color: "#ef4444", fontSize: 13 }}>- ${totalGastos.toFixed(2)}</Text>
+              </View>
+
+              <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
                 <Text style={{ color: colors.textMuted, fontSize: 13 }}>Ventas Transferencia</Text>
                 <Text style={{ color: "#38bdf8", fontSize: 13 }}>${totalTransferencia.toFixed(2)}</Text>
               </View>
 
               <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 8 }}>
-                <Text style={{ color: colors.text, fontSize: 14, fontWeight: "500" }}>Total Esperado en Caja</Text>
+                <Text style={{ color: colors.text, fontSize: 14, fontWeight: "500" }}>Total Esperado en Caja (Efectivo)</Text>
                 <Text style={{ color: "#F97316", fontSize: 16, fontWeight: "bold" }}>${esperadoEnCaja.toFixed(2)}</Text>
               </View>
             </View>
 
             {/* Cierre de Caja */}
-            {!caja.cerradaAt ? (
+            {!caja.cerrada_at ? (
               <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border, gap: 16 }}>
                 <View>
                   <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Monto Contado Físicamente</Text>
@@ -206,7 +257,7 @@ export default function GestionCaja() {
                   />
                 </View>
 
-                {montoContado !== "" && !isNaN(Number(montoContado)) && (
+                {montoContado !== "" && !isNaN(Number(montoContado.replace(",", "."))) && (
                   <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: diferencia === 0 ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#2a1a1a" : "#ffe6e6"), borderRadius: 10, borderWidth: 0.5, borderColor: diferencia === 0 ? "#22c55e" : "#ef4444" }}>
                     <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia</Text>
                     <Text style={{ color: diferencia === 0 ? "#22c55e" : "#ef4444", fontSize: 14, fontWeight: "bold" }}>
@@ -229,16 +280,30 @@ export default function GestionCaja() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border }}>
-                <Text style={{ color: colors.textMuted, textAlign: "center", marginBottom: 12 }}>
-                  Caja cerrada a las {new Date(caja.cerradaAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: colors.bgInput, borderRadius: 10 }}>
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Monto Declarado</Text>
-                  <Text style={{ color: colors.text, fontSize: 14, fontWeight: "bold" }}>
-                    ${(caja.montoDeclarado || 0).toFixed(2)}
+              <View style={{ gap: 16 }}>
+                <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border }}>
+                  <Text style={{ color: colors.textMuted, textAlign: "center", marginBottom: 12 }}>
+                    Caja cerrada a las {new Date(caja.cerrada_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: colors.bgInput, borderRadius: 10 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Monto Declarado</Text>
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: "bold" }}>
+                      ${(caja.montoDeclarado || 0).toFixed(2)}
+                    </Text>
+                  </View>
                 </View>
+
+                <TouchableOpacity
+                  onPress={() => setCaja(null)}
+                  style={{
+                    backgroundColor: "#F97316",
+                    padding: 14,
+                    borderRadius: 10,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>Abrir Nueva Caja</Text>
+                </TouchableOpacity>
               </View>
             )}
           </>

@@ -100,7 +100,7 @@ export default function BodegaIndex() {
         if (!ingAjuste) return;
         await ajustarStock({
           ingredienteId: ingAjuste.id,
-          stockReal: Number(stockReal),
+          stockReal: Number(stockReal.replace(",", ".")),
           motivo: motivoAjuste,
         });
         setModalAjuste(false);
@@ -108,8 +108,8 @@ export default function BodegaIndex() {
       } else if (pinAction === "registrar_compra") {
         await registrarCompra({
           ingredienteId: ingCompraId,
-          cantidad: Number(cantidadCompra),
-          costoTotal: Number(costoCompra),
+          cantidad: Number(cantidadCompra.replace(",", ".")),
+          costoTotal: Number(costoCompra.replace(",", ".")),
           fecha: fechaCompra,
         });
         setModalCompra(false);
@@ -119,13 +119,13 @@ export default function BodegaIndex() {
           await editarIngrediente(ingEditId, {
             nombre: ingNombre,
             unidad: ingUnidad,
-            stockMinimo: Number(ingMinimo),
+            stockMinimo: Number(ingMinimo.replace(",", ".")),
           });
         } else {
           await crearIngrediente({
             nombre: ingNombre,
             unidad: ingUnidad,
-            stockMinimo: Number(ingMinimo),
+            stockMinimo: Number(ingMinimo.replace(",", ".")),
           });
         }
         setModalIng(false);
@@ -149,12 +149,16 @@ export default function BodegaIndex() {
   };
 
   const confirmarAjuste = () => {
-    if (!stockReal || isNaN(Number(stockReal)) || !motivoAjuste) {
+    const val = stockReal.replace(",", ".");
+    if (!stockReal || isNaN(Number(val)) || !motivoAjuste) {
       Alert.alert("Error", "Ingresa un stock real válido y un motivo.");
       return;
     }
+    setModalAjuste(false);
     setPinAction("ajustar");
-    setShowPinModal(true);
+    setTimeout(() => {
+      setShowPinModal(true);
+    }, 400);
   };
 
   const solicitarCompra = () => {
@@ -166,12 +170,17 @@ export default function BodegaIndex() {
   };
 
   const confirmarCompra = () => {
-    if (!ingCompraId || !cantidadCompra || !costoCompra) {
-      Alert.alert("Error", "Todos los campos son obligatorios.");
+    const cant = cantidadCompra.replace(",", ".");
+    const cost = costoCompra.replace(",", ".");
+    if (!ingCompraId || !cantidadCompra || !costoCompra || isNaN(Number(cant)) || isNaN(Number(cost))) {
+      Alert.alert("Error", "Todos los campos son obligatorios y deben ser válidos.");
       return;
     }
+    setModalCompra(false);
     setPinAction("registrar_compra");
-    setShowPinModal(true);
+    setTimeout(() => {
+      setShowPinModal(true);
+    }, 400);
   };
 
   const solicitarNuevoIngrediente = () => {
@@ -191,12 +200,16 @@ export default function BodegaIndex() {
   };
 
   const confirmarIngrediente = () => {
-    if (!ingNombre || !ingMinimo) {
-      Alert.alert("Error", "Nombre y Stock Mínimo son obligatorios.");
+    const min = ingMinimo.replace(",", ".");
+    if (!ingNombre || !ingMinimo || isNaN(Number(min))) {
+      Alert.alert("Error", "Nombre y Stock Mínimo válidos son obligatorios.");
       return;
     }
+    setModalIng(false);
     setPinAction("guardar_ingrediente");
-    setShowPinModal(true);
+    setTimeout(() => {
+      setShowPinModal(true);
+    }, 400);
   };
 
   return (
@@ -560,7 +573,17 @@ export default function BodegaIndex() {
           onSuccess={handlePinSuccess}
           onCancel={() => {
             setShowPinModal(false);
+            const prevAction = pinAction;
             setPinAction(null);
+            setTimeout(() => {
+              if (prevAction === "ajustar") {
+                setModalAjuste(true);
+              } else if (prevAction === "registrar_compra") {
+                setModalCompra(true);
+              } else if (prevAction === "guardar_ingrediente") {
+                setModalIng(true);
+              }
+            }, 400);
           }}
         />
       )}

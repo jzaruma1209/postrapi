@@ -13,11 +13,13 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, Producto } from "../../../src/db/schema";
 import { useVentasStore } from "../../../src/stores/useVentasStore";
-import { crearVenta } from "../../../src/services/ventas.service";
+import { crearVenta, getCajaAbierta } from "../../../src/services/ventas.service";
 import type { MetodoPago } from "../../../src/utils/types";
 import { configuracion } from "../../../src/db/schema";
 import TicketModal from "../../../src/components/shared/TicketModal";
 import type { DatosTicket } from "../../../src/services/printer.service";
+import PinModal from "../../../src/components/shared/PinModal";
+import { todayDate } from "../../../src/utils/dates";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 export default function VentasIndex() {
@@ -37,6 +39,9 @@ export default function VentasIndex() {
   const [modalCobro, setModalCobro] = useState(false);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [procesando, setProcesando] = useState(false);
+
+  // PIN Modal State for old caja warning
+  const [showPinModal, setShowPinModal] = useState(false);
 
   const fechaHoyStr = useMemo(() => {
     const fecha = new Date();
@@ -80,6 +85,52 @@ export default function VentasIndex() {
 
   const confirmarVenta = async () => {
     if (carrito.length === 0) return;
+    setProcesando(true);
+    try {
+      const cajaAbierta = await getCajaAbierta();
+      if (!cajaAbierta) {
+        Alert.alert(
+          "Caja Cerrada",
+          "Debes abrir la caja antes de registrar una venta.",
+          [
+            { text: "Ir a Caja", onPress: () => {
+              setModalCobro(false);
+              router.push("/ventas/caja");
+            }},
+            { text: "Cancelar", style: "cancel" }
+          ]
+        );
+        setProcesando(false);
+        return;
+      }
+
+      if (cajaAbierta.fecha !== todayDate()) {
+        Alert.alert(
+          "Caja del día anterior",
+          `La caja actual se abrió el día anterior (${cajaAbierta.fecha}). ¿Deseas continuar vendiendo en ella? (Requiere PIN de supervisor)`,
+          [
+            { text: "No, ir a cerrar caja", onPress: () => {
+              setModalCobro(false);
+              router.push("/ventas/caja");
+            }},
+            { text: "Sí, continuar con PIN", onPress: () => {
+              setProcesando(false);
+              setShowPinModal(true);
+            }}
+          ]
+        );
+        return;
+      }
+
+      await ejecutarConfirmarVenta();
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "No se pudo procesar la venta.");
+      setProcesando(false);
+    }
+  };
+
+  const ejecutarConfirmarVenta = async () => {
     setProcesando(true);
     try {
       const ventaId = await crearVenta({
@@ -432,6 +483,18 @@ export default function VentasIndex() {
         datos={ticketDatos}
         onClose={cerrarTicket}
       />
+
+      {showPinModal && (
+        <PinModal
+          visible={showPinModal}
+          titulo="PIN de Supervisor requerido"
+          onSuccess={() => {
+            setShowPinModal(false);
+            ejecutarConfirmarVenta();
+          }}
+          onCancel={() => setShowPinModal(false)}
+        />
+      )}
     </View>
   );
 }
