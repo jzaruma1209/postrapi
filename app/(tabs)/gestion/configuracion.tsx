@@ -8,6 +8,8 @@ import {
   Alert,
   Switch,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -130,7 +132,7 @@ export default function GestionConfiguracion() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -384,6 +386,6 @@ export default function GestionConfiguracion() {
           <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>Guardar cambios</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

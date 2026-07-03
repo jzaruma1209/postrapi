@@ -7,6 +7,8 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -218,68 +220,72 @@ export default function GastosIndex() {
       {/* Modal Registrar Gasto */}
       <Modal visible={modalGasto} transparent animationType="slide" onRequestClose={() => setModalGasto(false)}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
-            <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
-            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 16 }}>Registrar gasto</Text>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+              <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
+              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 16 }}>Registrar gasto</Text>
 
-            <View style={{ gap: 12, marginBottom: 24 }}>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Concepto</Text>
-                <TextInput
-                  value={concepto}
-                  onChangeText={setConcepto}
-                  placeholder="ej: Pago luz agosto"
-                  placeholderTextColor={colors.textMuted}
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 12, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
-              </View>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Monto ($)</Text>
-                <TextInput
-                  value={monto}
-                  onChangeText={setMonto}
-                  keyboardType="numeric"
-                  placeholder="Ej: 50.00"
-                  placeholderTextColor={colors.textMuted}
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 12, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
-              </View>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Categoría</Text>
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                  {(["servicios", "personal", "transporte", "otro"] as CategoriaGasto[]).map((cat) => {
-                    const catStyle = getCategoriaStyle(cat);
-                    const isActive = categoria === cat;
-                    return (
-                      <TouchableOpacity
-                        key={cat}
-                        onPress={() => setCategoria(cat)}
-                        style={{
-                          backgroundColor: isActive ? catStyle.bg : colors.bgInput,
-                          paddingHorizontal: 14,
-                          paddingVertical: 10,
-                          borderRadius: 10,
-                          borderWidth: 1,
-                          borderColor: isActive ? catStyle.text : colors.border,
-                        }}
-                      >
-                        <Text style={{ color: isActive ? catStyle.text : colors.textMuted, fontSize: 13, fontWeight: "500" }}>{catStyle.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+              <ScrollView keyboardShouldPersistTaps="handled">
+                <View style={{ gap: 12, marginBottom: 24 }}>
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Concepto</Text>
+                    <TextInput
+                      value={concepto}
+                      onChangeText={setConcepto}
+                      placeholder="ej: Pago luz agosto"
+                      placeholderTextColor={colors.textMuted}
+                      style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 12, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Monto ($)</Text>
+                    <TextInput
+                      value={monto}
+                      onChangeText={setMonto}
+                      keyboardType="numeric"
+                      placeholder="Ej: 50.00"
+                      placeholderTextColor={colors.textMuted}
+                      style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 12, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                    />
+                  </View>
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Categoría</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                      {(["servicios", "personal", "transporte", "otro"] as CategoriaGasto[]).map((cat) => {
+                        const catStyle = getCategoriaStyle(cat);
+                        const isActive = categoria === cat;
+                        return (
+                          <TouchableOpacity
+                            key={cat}
+                            onPress={() => setCategoria(cat)}
+                            style={{
+                              backgroundColor: isActive ? catStyle.bg : colors.bgInput,
+                              paddingHorizontal: 14,
+                              paddingVertical: 10,
+                              borderRadius: 10,
+                              borderWidth: 1,
+                              borderColor: isActive ? catStyle.text : colors.border,
+                            }}
+                          >
+                            <Text style={{ color: isActive ? catStyle.text : colors.textMuted, fontSize: 13, fontWeight: "500" }}>{catStyle.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
                 </View>
-              </View>
-            </View>
 
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity onPress={() => setModalGasto(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
-                <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmarNuevoGasto} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Registrar gasto</Text>
-              </TouchableOpacity>
+                <View style={{ flexDirection: "row", gap: 12 }}>
+                  <TouchableOpacity onPress={() => setModalGasto(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
+                    <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={confirmarNuevoGasto} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
+                    <Text style={{ color: "#fff", fontWeight: "600" }}>Registrar gasto</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 

@@ -7,6 +7,8 @@ import {
   Modal,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -381,167 +383,173 @@ export default function BodegaIndex() {
 
       {/* Ajuste Stock */}
       <Modal visible={modalAjuste} transparent animationType="slide" onRequestClose={() => setModalAjuste(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
             <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
             <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginBottom: 16 }}>Ajustar stock — {ingAjuste?.nombre}</Text>
             
-            <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 20, backgroundColor: colors.bgInput, padding: 16, borderRadius: 12, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}>
-              <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: "500" }}>Stock actual en sistema</Text>
-              <Text style={{ color: colors.text, fontSize: 15, fontWeight: "bold" }}>{formatearCantidad(ingAjuste?.stockActual ?? 0)} {ingAjuste?.unidad}</Text>
-            </View>
-
-            <View style={{ gap: 16, marginBottom: 24 }}>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Stock real contado</Text>
-                <TextInput
-                  value={stockReal}
-                  onChangeText={setStockReal}
-                  keyboardType="numeric"
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 20, backgroundColor: colors.bgInput, padding: 16, borderRadius: 12, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}>
+                <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: "500" }}>Stock actual en sistema</Text>
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: "bold" }}>{formatearCantidad(ingAjuste?.stockActual ?? 0)} {ingAjuste?.unidad}</Text>
               </View>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Motivo (obligatorio)</Text>
-                <TextInput
-                  value={motivoAjuste}
-                  onChangeText={setMotivoAjuste}
-                  placeholder="Ej: Merma, Conteo físico"
-                  placeholderTextColor={colors.textMuted}
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
-              </View>
-            </View>
 
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity onPress={() => setModalAjuste(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
-                <Text style={{ color: colors.textMuted, fontWeight: "600" }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmarAjuste} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Guardar ajuste</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={{ gap: 16, marginBottom: 24 }}>
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Stock real contado</Text>
+                  <TextInput
+                    value={stockReal}
+                    onChangeText={setStockReal}
+                    keyboardType="numeric"
+                    style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                  />
+                </View>
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Motivo (obligatorio)</Text>
+                  <TextInput
+                    value={motivoAjuste}
+                    onChangeText={setMotivoAjuste}
+                    placeholder="Ej: Merma, Conteo físico"
+                    placeholderTextColor={colors.textMuted}
+                    style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                  />
+                </View>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity onPress={() => setModalAjuste(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
+                  <Text style={{ color: colors.textMuted, fontWeight: "600" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmarAjuste} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Guardar ajuste</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Registro de Compra */}
       <Modal visible={modalCompra} transparent animationType="slide" onRequestClose={() => setModalCompra(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
             <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
             <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginBottom: 16 }}>Registrar compra</Text>
             
-            <View style={{ gap: 16, marginBottom: 24 }}>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Ingrediente</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                  {ingredientesList.map(ing => (
-                    <TouchableOpacity
-                      key={ing.id}
-                      onPress={() => setIngCompraId(ing.id)}
-                      style={{ backgroundColor: ingCompraId === ing.id ? "#F97316" : colors.bgChip, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: ingCompraId === ing.id ? "#F97316" : colors.border }}
-                    >
-                      <Text style={{ color: ingCompraId === ing.id ? "#fff" : colors.textMuted, fontSize: 13, fontWeight: ingCompraId === ing.id ? "600" : "500" }}>{ing.nombre}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <View style={{ gap: 16, marginBottom: 24 }}>
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Ingrediente</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    {ingredientesList.map(ing => (
+                      <TouchableOpacity
+                        key={ing.id}
+                        onPress={() => setIngCompraId(ing.id)}
+                        style={{ backgroundColor: ingCompraId === ing.id ? "#F97316" : colors.bgChip, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: ingCompraId === ing.id ? "#F97316" : colors.border }}
+                      >
+                        <Text style={{ color: ingCompraId === ing.id ? "#fff" : colors.textMuted, fontSize: 13, fontWeight: ingCompraId === ing.id ? "600" : "500" }}>{ing.nombre}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>
+                    Cantidad entrante ({ingredientesList.find(i => i.id === ingCompraId)?.unidad || "-"})
+                  </Text>
+                  <TextInput
+                    value={cantidadCompra}
+                    onChangeText={setCantidadCompra}
+                    keyboardType="numeric"
+                    placeholder="Ej: 5"
+                    placeholderTextColor={colors.textMuted}
+                    style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Costo total ($)</Text>
+                  <TextInput
+                    value={costoCompra}
+                    onChangeText={setCostoCompra}
+                    keyboardType="numeric"
+                    placeholder="Ej: 15.50"
+                    placeholderTextColor={colors.textMuted}
+                    style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                  />
+                </View>
               </View>
 
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>
-                  Cantidad entrante ({ingredientesList.find(i => i.id === ingCompraId)?.unidad || "-"})
-                </Text>
-                <TextInput
-                  value={cantidadCompra}
-                  onChangeText={setCantidadCompra}
-                  keyboardType="numeric"
-                  placeholder="Ej: 5"
-                  placeholderTextColor={colors.textMuted}
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity onPress={() => setModalCompra(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
+                  <Text style={{ color: colors.textMuted, fontWeight: "600" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmarCompra} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Registrar</Text>
+                </TouchableOpacity>
               </View>
-
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Costo total ($)</Text>
-                <TextInput
-                  value={costoCompra}
-                  onChangeText={setCostoCompra}
-                  keyboardType="numeric"
-                  placeholder="Ej: 15.50"
-                  placeholderTextColor={colors.textMuted}
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
-              </View>
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity onPress={() => setModalCompra(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
-                <Text style={{ color: colors.textMuted, fontWeight: "600" }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmarCompra} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Registrar</Text>
-              </TouchableOpacity>
-            </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Crear/Editar Ingrediente */}
       <Modal visible={modalIng} transparent animationType="slide" onRequestClose={() => setModalIng(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
             <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
             <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginBottom: 16 }}>
               {ingEditId ? "Editar Ingrediente" : "Nuevo Ingrediente"}
             </Text>
-            
-            <View style={{ gap: 16, marginBottom: 24 }}>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Nombre</Text>
-                <TextInput
-                  value={ingNombre}
-                  onChangeText={setIngNombre}
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
-              </View>
 
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Unidad</Text>
-                <View style={{ flexDirection: "row", gap: 8 }}>
-                  {(["kg", "g", "litros", "unidades"] as const).map(u => (
-                    <TouchableOpacity
-                      key={u}
-                      onPress={() => setIngUnidad(u)}
-                      style={{ flex: 1, alignItems: "center", backgroundColor: ingUnidad === u ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgChip, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: ingUnidad === u ? "#F97316" : colors.border }}
-                    >
-                      <Text style={{ color: ingUnidad === u ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "500" }}>{u}</Text>
-                    </TouchableOpacity>
-                  ))}
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <View style={{ gap: 16, marginBottom: 24 }}>
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Nombre</Text>
+                  <TextInput
+                    value={ingNombre}
+                    onChangeText={setIngNombre}
+                    style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Unidad</Text>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    {(["kg", "g", "litros", "unidades"] as const).map(u => (
+                      <TouchableOpacity
+                        key={u}
+                        onPress={() => setIngUnidad(u)}
+                        style={{ flex: 1, alignItems: "center", backgroundColor: ingUnidad === u ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgChip, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: ingUnidad === u ? "#F97316" : colors.border }}
+                      >
+                        <Text style={{ color: ingUnidad === u ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "500" }}>{u}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Stock mínimo (para alertas)</Text>
+                  <TextInput
+                    value={ingMinimo}
+                    onChangeText={setIngMinimo}
+                    keyboardType="numeric"
+                    style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
+                  />
                 </View>
               </View>
 
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8, fontWeight: "500" }}>Stock mínimo (para alertas)</Text>
-                <TextInput
-                  value={ingMinimo}
-                  onChangeText={setIngMinimo}
-                  keyboardType="numeric"
-                  style={{ backgroundColor: colors.bgInput, color: colors.text, padding: 14, borderRadius: 10, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}
-                />
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity onPress={() => setModalIng(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
+                  <Text style={{ color: colors.textMuted, fontWeight: "600" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmarIngrediente} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>Guardar</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity onPress={() => setModalIng(false)} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
-                <Text style={{ color: colors.textMuted, fontWeight: "600" }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmarIngrediente} style={{ flex: 1, backgroundColor: "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontWeight: "600" }}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* PIN MODAL GLOBAL PARA BODEGA */}

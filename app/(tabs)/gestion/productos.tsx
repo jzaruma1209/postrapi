@@ -8,6 +8,8 @@ import {
   Modal,
   Alert,
   Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -210,96 +212,100 @@ export default function GestionProductos() {
       {/* Modal Formulario */}
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View
-            style={{
-              backgroundColor: colors.bgCard,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              padding: 24,
-              minHeight: 400,
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: "500", color: colors.text, marginBottom: 20 }}>
-              {editando ? "Editar Producto" : "Nuevo Producto"}
-            </Text>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            <View
+              style={{
+                backgroundColor: colors.bgCard,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                padding: 24,
+                minHeight: 400,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "500", color: colors.text, marginBottom: 20 }}>
+                {editando ? "Editar Producto" : "Nuevo Producto"}
+              </Text>
 
-            <View style={{ gap: 16 }}>
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Nombre</Text>
-                <TextInput
-                  value={nombre}
-                  onChangeText={setNombre}
-                  style={{
-                    backgroundColor: colors.bgInput,
-                    color: colors.text,
-                    borderRadius: 10,
-                    padding: 12,
-                    fontSize: 14,
-                  }}
-                  placeholderTextColor={colors.textMuted}
-                  placeholder="Ej. Hamburguesa Clásica"
-                />
-              </View>
+              <ScrollView keyboardShouldPersistTaps="handled">
+                <View style={{ gap: 16 }}>
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Nombre</Text>
+                    <TextInput
+                      value={nombre}
+                      onChangeText={setNombre}
+                      style={{
+                        backgroundColor: colors.bgInput,
+                        color: colors.text,
+                        borderRadius: 10,
+                        padding: 12,
+                        fontSize: 14,
+                      }}
+                      placeholderTextColor={colors.textMuted}
+                      placeholder="Ej. Hamburguesa Clásica"
+                    />
+                  </View>
 
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Precio</Text>
-                <TextInput
-                  value={precio}
-                  onChangeText={setPrecio}
-                  keyboardType="numeric"
-                  style={{
-                    backgroundColor: colors.bgInput,
-                    color: colors.text,
-                    borderRadius: 10,
-                    padding: 12,
-                    fontSize: 14,
-                  }}
-                  placeholderTextColor={colors.textMuted}
-                  placeholder="Ej. 1500"
-                />
-              </View>
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Precio</Text>
+                    <TextInput
+                      value={precio}
+                      onChangeText={setPrecio}
+                      keyboardType="numeric"
+                      style={{
+                        backgroundColor: colors.bgInput,
+                        color: colors.text,
+                        borderRadius: 10,
+                        padding: 12,
+                        fontSize: 14,
+                      }}
+                      placeholderTextColor={colors.textMuted}
+                      placeholder="Ej. 1500"
+                    />
+                  </View>
 
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                <Text style={{ color: colors.text, fontSize: 14 }}>Producto Activo</Text>
-                <Switch
-                  value={activo}
-                  onValueChange={setActivo}
-                  trackColor={{ false: isDark ? "#555" : "#ccc", true: "#F97316" }}
-                  thumbColor="#fff"
-                />
-              </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                    <Text style={{ color: colors.text, fontSize: 14 }}>Producto Activo</Text>
+                    <Switch
+                      value={activo}
+                      onValueChange={setActivo}
+                      trackColor={{ false: isDark ? "#555" : "#ccc", true: "#F97316" }}
+                      thumbColor="#fff"
+                    />
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 32 }}>
+                  <TouchableOpacity
+                    onPress={() => setModalVisible(false)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: "transparent",
+                      borderWidth: 1,
+                      borderColor: colors.borderLight,
+                      padding: 14,
+                      borderRadius: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: colors.textLight, fontWeight: "500" }}>Cancelar</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    onPress={guardarProducto}
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#F97316",
+                      padding: 14,
+                      borderRadius: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontWeight: "500" }}>Guardar</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             </View>
-
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 32 }}>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={{
-                  flex: 1,
-                  backgroundColor: "transparent",
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  padding: 14,
-                  borderRadius: 10,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: colors.textLight, fontWeight: "500" }}>Cancelar</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                onPress={guardarProducto}
-                style={{
-                  flex: 1,
-                  backgroundColor: "#F97316",
-                  padding: 14,
-                  borderRadius: 10,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "500" }}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>

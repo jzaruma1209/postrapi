@@ -7,10 +7,12 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { v4 as uuidv4 } from "uuid";
+import { generateId } from "../../../src/utils/uuid";
 import { eq, and } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, ingredientes, recetas, Producto, Ingrediente, Receta } from "../../../src/db/schema";
@@ -95,7 +97,7 @@ export default function GestionRecetas() {
 
     try {
       await db.insert(recetas).values({
-        id: uuidv4(),
+        id: generateId(),
         productoId: productoActual.id,
         ingredienteId: ingredienteSeleccionado,
         cantidad: Number(cantidad),
@@ -233,97 +235,101 @@ export default function GestionRecetas() {
       {/* Modal Formulario */}
       <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View
-            style={{
-              backgroundColor: colors.bgCard,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              padding: 24,
-              minHeight: 400,
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: "500", color: colors.text, marginBottom: 20 }}>
-              Vincular Ingrediente
-            </Text>
+          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+            <View
+              style={{
+                backgroundColor: colors.bgCard,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                padding: 24,
+                minHeight: 400,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "500", color: colors.text, marginBottom: 20 }}>
+                Vincular Ingrediente
+              </Text>
 
-            <View style={{ gap: 16 }}>
-              {/* Selector Custom Simple (ScrollView con TouchableOpacity) */}
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Selecciona Ingrediente</Text>
-                <View style={{ height: 120, backgroundColor: colors.bgInput, borderRadius: 10, overflow: "hidden" }}>
-                  <ScrollView nestedScrollEnabled>
-                    {listaIngredientes.map(ing => (
-                      <TouchableOpacity
-                        key={ing.id}
-                        onPress={() => setIngredienteSeleccionado(ing.id)}
-                        style={{
-                          padding: 12,
-                          backgroundColor: ingredienteSeleccionado === ing.id ? "#F97316" : "transparent",
-                          borderBottomWidth: 1,
-                          borderBottomColor: colors.borderLight,
-                        }}
-                      >
-                        <Text style={{ color: ingredienteSeleccionado === ing.id ? "#fff" : colors.text, fontSize: 14 }}>{ing.nombre} ({ing.unidad})</Text>
-                      </TouchableOpacity>
-                    ))}
-                    {listaIngredientes.length === 0 && (
-                      <Text style={{ color: colors.textMuted, padding: 12 }}>No hay ingredientes registrados.</Text>
-                    )}
-                  </ScrollView>
+              <ScrollView keyboardShouldPersistTaps="handled">
+                <View style={{ gap: 16 }}>
+                  {/* Selector Custom Simple (ScrollView con TouchableOpacity) */}
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Selecciona Ingrediente</Text>
+                    <View style={{ height: 120, backgroundColor: colors.bgInput, borderRadius: 10, overflow: "hidden" }}>
+                      <ScrollView nestedScrollEnabled>
+                        {listaIngredientes.map(ing => (
+                          <TouchableOpacity
+                            key={ing.id}
+                            onPress={() => setIngredienteSeleccionado(ing.id)}
+                            style={{
+                              padding: 12,
+                              backgroundColor: ingredienteSeleccionado === ing.id ? "#F97316" : "transparent",
+                              borderBottomWidth: 1,
+                              borderBottomColor: colors.borderLight,
+                            }}
+                          >
+                            <Text style={{ color: ingredienteSeleccionado === ing.id ? "#fff" : colors.text, fontSize: 14 }}>{ing.nombre} ({ing.unidad})</Text>
+                          </TouchableOpacity>
+                        ))}
+                        {listaIngredientes.length === 0 && (
+                          <Text style={{ color: colors.textMuted, padding: 12 }}>No hay ingredientes registrados.</Text>
+                        )}
+                      </ScrollView>
+                    </View>
+                  </View>
+
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>
+                      Cantidad {ingredienteInfo ? `(en ${ingredienteInfo.unidad})` : ""}
+                    </Text>
+                    <TextInput
+                      value={cantidad}
+                      onChangeText={setCantidad}
+                      keyboardType="numeric"
+                      style={{
+                        backgroundColor: colors.bgInput,
+                        color: colors.text,
+                        borderRadius: 10,
+                        padding: 12,
+                        fontSize: 14,
+                      }}
+                      placeholderTextColor={colors.textMuted}
+                      placeholder="Ej. 1.5"
+                    />
+                  </View>
                 </View>
-              </View>
 
-              <View>
-                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>
-                  Cantidad {ingredienteInfo ? `(en ${ingredienteInfo.unidad})` : ""}
-                </Text>
-                <TextInput
-                  value={cantidad}
-                  onChangeText={setCantidad}
-                  keyboardType="numeric"
-                  style={{
-                    backgroundColor: colors.bgInput,
-                    color: colors.text,
-                    borderRadius: 10,
-                    padding: 12,
-                    fontSize: 14,
-                  }}
-                  placeholderTextColor={colors.textMuted}
-                  placeholder="Ej. 1.5"
-                />
-              </View>
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 32 }}>
+                  <TouchableOpacity
+                    onPress={() => setModalVisible(false)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: "transparent",
+                      borderWidth: 1,
+                      borderColor: colors.borderLight,
+                      padding: 14,
+                      borderRadius: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: colors.textLight, fontWeight: "500" }}>Cancelar</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    onPress={guardarReceta}
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#F97316",
+                      padding: 14,
+                      borderRadius: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontWeight: "500" }}>Guardar</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             </View>
-
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 32 }}>
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={{
-                  flex: 1,
-                  backgroundColor: "transparent",
-                  borderWidth: 1,
-                  borderColor: colors.borderLight,
-                  padding: 14,
-                  borderRadius: 10,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: colors.textLight, fontWeight: "500" }}>Cancelar</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                onPress={guardarReceta}
-                style={{
-                  flex: 1,
-                  backgroundColor: "#F97316",
-                  padding: 14,
-                  borderRadius: 10,
-                  alignItems: "center",
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "500" }}>Guardar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
     </View>

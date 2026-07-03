@@ -6,6 +6,8 @@ import {
   ScrollView,
   TextInput,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -55,7 +57,7 @@ export default function GestionPin() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Top Bar */}
       <View
         style={{
@@ -170,6 +172,6 @@ export default function GestionPin() {
           <Text style={{ color: "#fff", fontWeight: "500", fontSize: 14 }}>Cambiar PIN</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
