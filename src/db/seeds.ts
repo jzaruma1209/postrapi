@@ -12,25 +12,25 @@ export async function runSeeds(): Promise<void> {
   }
 
   // ─── INGREDIENTES ─────────────────────────────────────
-  const ingPapas = { id: generateId(), nombre: "Papas", unidad: "kg", stockActual: 10, stockMinimo: 2, created_at: nowISO(), synced: 0 };
-  const ingPollo = { id: generateId(), nombre: "Pollo", unidad: "kg", stockActual: 8, stockMinimo: 2, created_at: nowISO(), synced: 0 };
-  const ingSalchicha = { id: generateId(), nombre: "Salchichas", unidad: "kg", stockActual: 5, stockMinimo: 1, created_at: nowISO(), synced: 0 };
-  const ingAceite = { id: generateId(), nombre: "Aceite", unidad: "litros", stockActual: 4, stockMinimo: 1, created_at: nowISO(), synced: 0 };
-  const ingSal = { id: generateId(), nombre: "Sal", unidad: "kg", stockActual: 2, stockMinimo: 0.5, created_at: nowISO(), synced: 0 };
-  const ingGaseosa = { id: generateId(), nombre: "Gaseosa", unidad: "unidades", stockActual: 24, stockMinimo: 6, created_at: nowISO(), synced: 0 };
-  const ingPan = { id: generateId(), nombre: "Pan de hamburguesa", unidad: "unidades", stockActual: 20, stockMinimo: 5, created_at: nowISO(), synced: 0 };
-  const ingQueso = { id: generateId(), nombre: "Queso", unidad: "kg", stockActual: 2, stockMinimo: 0.5, created_at: nowISO(), synced: 0 };
+  const ingPapas = { id: "ing-papas", nombre: "Papas", unidad: "kg", stockActual: 10, stockMinimo: 2, created_at: nowISO(), synced: 0 };
+  const ingPollo = { id: "ing-pollo", nombre: "Pollo", unidad: "kg", stockActual: 8, stockMinimo: 2, created_at: nowISO(), synced: 0 };
+  const ingSalchicha = { id: "ing-salchicha", nombre: "Salchichas", unidad: "kg", stockActual: 5, stockMinimo: 1, created_at: nowISO(), synced: 0 };
+  const ingAceite = { id: "ing-aceite", nombre: "Aceite", unidad: "litros", stockActual: 4, stockMinimo: 1, created_at: nowISO(), synced: 0 };
+  const ingSal = { id: "ing-sal", nombre: "Sal", unidad: "kg", stockActual: 2, stockMinimo: 0.5, created_at: nowISO(), synced: 0 };
+  const ingGaseosa = { id: "ing-gaseosa", nombre: "Gaseosa", unidad: "unidades", stockActual: 24, stockMinimo: 6, created_at: nowISO(), synced: 0 };
+  const ingPan = { id: "ing-pan", nombre: "Pan de hamburguesa", unidad: "unidades", stockActual: 20, stockMinimo: 5, created_at: nowISO(), synced: 0 };
+  const ingQueso = { id: "ing-queso", nombre: "Queso", unidad: "kg", stockActual: 2, stockMinimo: 0.5, created_at: nowISO(), synced: 0 };
 
   await db.insert(ingredientes).values([
     ingPapas, ingPollo, ingSalchicha, ingAceite, ingSal, ingGaseosa, ingPan, ingQueso
   ]);
 
   // ─── PRODUCTOS ────────────────────────────────────────
-  const prodPapaPollo = { id: generateId(), nombre: "Papa con pollo", precio: 5.50, activo: 1, created_at: nowISO(), synced: 0 };
-  const prodSalchipapa = { id: generateId(), nombre: "Salchipapa", precio: 4.00, activo: 1, created_at: nowISO(), synced: 0 };
-  const prodComboFamiliar = { id: generateId(), nombre: "Combo familiar", precio: 12.00, activo: 1, created_at: nowISO(), synced: 0 };
-  const prodGaseosa = { id: generateId(), nombre: "Gaseosa", precio: 1.50, activo: 1, created_at: nowISO(), synced: 0 };
-  const prodHamburguesa = { id: generateId(), nombre: "Hamburguesa", precio: 6.00, activo: 1, created_at: nowISO(), synced: 0 };
+  const prodPapaPollo = { id: "prod-papa-pollo", nombre: "Papa con pollo", precio: 5.50, activo: 1, created_at: nowISO(), synced: 0 };
+  const prodSalchipapa = { id: "prod-salchipapa", nombre: "Salchipapa", precio: 4.00, activo: 1, created_at: nowISO(), synced: 0 };
+  const prodComboFamiliar = { id: "prod-combo-familiar", nombre: "Combo familiar", precio: 12.00, activo: 1, created_at: nowISO(), synced: 0 };
+  const prodGaseosa = { id: "prod-gaseosa", nombre: "Gaseosa", precio: 1.50, activo: 1, created_at: nowISO(), synced: 0 };
+  const prodHamburguesa = { id: "prod-hamburguesa", nombre: "Hamburguesa", precio: 6.00, activo: 1, created_at: nowISO(), synced: 0 };
 
   await db.insert(productos).values([
     prodPapaPollo, prodSalchipapa, prodComboFamiliar, prodGaseosa, prodHamburguesa

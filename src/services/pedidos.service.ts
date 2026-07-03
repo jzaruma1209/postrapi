@@ -25,29 +25,30 @@ export async function crearPedido(params: CrearPedidoParams): Promise<string> {
   const pedidoId = generateId();
   const now = nowISO();
 
-  await db.transaction(async (tx) => {
-    await tx.insert(pedidos).values({
-      id: pedidoId,
-      clienteNombre: clienteNombre ?? null,
-      nota: nota ?? null,
-      origen,
-      estado: "pendiente",
+  // Bypassing db.transaction temporalmente para diagnosticar bug de expo-sqlite
+  const tx = db;
+  
+  await tx.insert(pedidos).values({
+    id: pedidoId,
+    clienteNombre: clienteNombre ?? null,
+    nota: nota ?? null,
+    origen,
+    estado: "pendiente",
+    created_at: now,
+    entregado_at: null,
+    synced: 0,
+  });
+
+  for (const item of items) {
+    await tx.insert(pedidoItems).values({
+      id: generateId(),
+      pedidoId,
+      productoId: item.productoId,
+      cantidad: item.cantidad,
       created_at: now,
-      entregado_at: null,
       synced: 0,
     });
-
-    for (const item of items) {
-      await tx.insert(pedidoItems).values({
-        id: generateId(),
-        pedidoId,
-        productoId: item.productoId,
-        cantidad: item.cantidad,
-        created_at: now,
-        synced: 0,
-      });
-    }
-  });
+  }
 
   return pedidoId;
 }

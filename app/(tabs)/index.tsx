@@ -12,7 +12,7 @@ import {
   getIngredientesStockBajo,
 } from "../../src/services/inventario.service";
 import { getPedidosActivos } from "../../src/services/pedidos.service";
-import { calcularGanancia, formatearGanancia } from "../../src/utils/calculos";
+import { calcularGanancia, formatearGanancia, formatearCantidad } from "../../src/utils/calculos";
 import { db } from "../../src/db";
 import { productos } from "../../src/db/schema";
 import type { Pedido, Ingrediente } from "../../src/db/schema";
@@ -221,7 +221,7 @@ export default function ResumenIndex() {
               {ingredientesBajos.slice(0, 3).map(ing => (
                 <View key={ing.id} style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text style={{ color: isDark ? "#ffb3b3" : "#dc2626", fontSize: 13 }}>{ing.nombre}</Text>
-                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>{ing.stockActual} {ing.unidad}</Text>
+                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>{formatearCantidad(ing.stockActual)} {ing.unidad}</Text>
                 </View>
               ))}
               {ingredientesBajos.length > 3 && (

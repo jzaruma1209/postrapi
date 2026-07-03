@@ -22,6 +22,7 @@ import {
 import PinModal from "../../../src/components/shared/PinModal";
 import type { Ingrediente, Compra } from "../../../src/db/schema";
 import { todayDate } from "../../../src/utils/dates";
+import { formatearCantidad } from "../../../src/utils/calculos";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 type TabBodega = "inventario" | "compras" | "ingredientes";
@@ -279,7 +280,7 @@ export default function BodegaIndex() {
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
                     <Text style={{ color: isBajo ? "#ef4444" : colors.text, fontSize: 16, fontWeight: "bold" }}>
-                      {ing.stockActual.toFixed(2)}
+                      {formatearCantidad(ing.stockActual)}
                     </Text>
                     <Text style={{ color: colors.textMuted, fontSize: 11 }}>{ing.unidad}</Text>
                   </View>
@@ -387,7 +388,7 @@ export default function BodegaIndex() {
             
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 20, backgroundColor: colors.bgInput, padding: 16, borderRadius: 12, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}>
               <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: "500" }}>Stock actual en sistema</Text>
-              <Text style={{ color: colors.text, fontSize: 15, fontWeight: "bold" }}>{ingAjuste?.stockActual.toFixed(2)} {ingAjuste?.unidad}</Text>
+              <Text style={{ color: colors.text, fontSize: 15, fontWeight: "bold" }}>{formatearCantidad(ingAjuste?.stockActual ?? 0)} {ingAjuste?.unidad}</Text>
             </View>
 
             <View style={{ gap: 16, marginBottom: 24 }}>

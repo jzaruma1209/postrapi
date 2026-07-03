@@ -35,70 +35,85 @@ export async function crearVenta(params: CrearVentaParams): Promise<string> {
   const now = nowISO();
   const total = items.reduce((acc, i) => acc + i.cantidad * i.precioUnitario, 0);
 
-  // Transacción: venta + items + descuento inventario
-  await db.transaction(async (tx) => {
-    // 1. Insertar venta
-    await tx.insert(ventas).values({
-      id: ventaId,
-      total,
-      metodoPago,
-      pedidoId: pedidoId ?? null,
+  // Bypassing db.transaction temporalmente para diagnosticar bug de expo-sqlite
+  const tx = db;
+  
+  console.log("==> Iniciando transaccion crearVenta con ventaId:", ventaId);
+  
+  // 1. Insertar venta
+  console.log("==> Insertando venta...");
+  await tx.insert(ventas).values({
+    id: ventaId,
+    total,
+    metodoPago,
+    pedidoId: pedidoId ?? null,
+    created_at: now,
+    synced: 0,
+  });
+  console.log("==> Venta insertada OK");
+
+  // 2. Insertar items de la venta
+  for (const item of items) {
+    console.log("==> Insertando ventaItem para producto:", item.productoId);
+    await tx.insert(ventaItems).values({
+      id: generateId(),
+      ventaId,
+      productoId: item.productoId,
+      cantidad: item.cantidad,
+      precioUnitario: item.precioUnitario,
+      subtotal: item.cantidad * item.precioUnitario,
       created_at: now,
       synced: 0,
     });
+    console.log("==> ventaItem insertado OK");
 
-    // 2. Insertar items de la venta
-    for (const item of items) {
-      await tx.insert(ventaItems).values({
+    // 3. Descontar inventario según receta
+    console.log("==> Buscando recetas para producto:", item.productoId);
+    const recetaItems = await tx
+      .select()
+      .from(recetas)
+      .where(eq(recetas.productoId, item.productoId));
+
+    for (const recetaItem of recetaItems) {
+      const cantidadDescontar = recetaItem.cantidad * item.cantidad;
+
+      // Insertar movimiento de inventario
+      console.log("==> Insertando movimiento para ingrediente:", recetaItem.ingredienteId);
+      await tx.insert(movimientosInventario).values({
         id: generateId(),
-        ventaId,
-        productoId: item.productoId,
-        cantidad: item.cantidad,
-        precioUnitario: item.precioUnitario,
-        subtotal: item.cantidad * item.precioUnitario,
+        ingredienteId: recetaItem.ingredienteId,
+        tipo: "descuento_venta",
+        cantidad: -cantidadDescontar, // negativo = salida
+        motivo: null,
+        referenciaId: ventaId,
         created_at: now,
         synced: 0,
       });
+      console.log("==> Movimiento insertado OK");
 
-      // 3. Descontar inventario según receta
-      const recetaItems = await tx
-        .select()
-        .from(recetas)
-        .where(eq(recetas.productoId, item.productoId));
-
-      for (const recetaItem of recetaItems) {
-        const cantidadDescontar = recetaItem.cantidad * item.cantidad;
-
-        // Insertar movimiento de inventario
-        await tx.insert(movimientosInventario).values({
-          id: generateId(),
-          ingredienteId: recetaItem.ingredienteId,
-          tipo: "descuento_venta",
-          cantidad: -cantidadDescontar, // negativo = salida
-          motivo: null,
-          referenciaId: ventaId,
-          created_at: now,
-          synced: 0,
-        });
-
-        // Actualizar stock actual
-        await tx
-          .update(ingredientes)
-          .set({
-            stockActual: sql`stock_actual - ${cantidadDescontar}`,
-          })
-          .where(eq(ingredientes.id, recetaItem.ingredienteId));
-      }
-    }
-
-    // 4. Si viene de un pedido, marcarlo como entregado
-    if (pedidoId) {
+      // Actualizar stock actual
+      console.log("==> Actualizando stock ingrediente:", recetaItem.ingredienteId);
       await tx
-        .update(pedidos)
-        .set({ estado: "entregado", entregado_at: now })
-        .where(eq(pedidos.id, pedidoId));
+        .update(ingredientes)
+        .set({
+          stockActual: sql`stock_actual - ${cantidadDescontar}`,
+        })
+        .where(eq(ingredientes.id, recetaItem.ingredienteId));
+      console.log("==> Stock actualizado OK");
     }
-  });
+  }
+
+  // 4. Si viene de un pedido, marcarlo como entregado
+  if (pedidoId) {
+    console.log("==> Actualizando pedido:", pedidoId);
+    await tx
+      .update(pedidos)
+      .set({ estado: "entregado", entregado_at: now })
+      .where(eq(pedidos.id, pedidoId));
+    console.log("==> Pedido actualizado OK");
+  }
+  
+  console.log("==> Transaccion crearVenta completada");
 
   return ventaId;
 }

@@ -12,7 +12,9 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { eq } from "drizzle-orm";
 import { db } from "../../../src/db";
-import { productos, Producto, Pedido } from "../../../src/db/schema";
+import { productos, Producto, Pedido, configuracion } from "../../../src/db/schema";
+import TicketModal from "../../../src/components/shared/TicketModal";
+import type { DatosTicket } from "../../../src/services/printer.service";
 import {
   getPedidosHoy,
   getPedidoItems,
@@ -56,6 +58,15 @@ export default function PedidosIndex() {
   const [modalCobro, setModalCobro] = useState(false);
   const [pedidoACobrar, setPedidoACobrar] = useState<string | null>(null);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
+
+  // Ticket Modal State
+  const [mostrarTicket, setMostrarTicket] = useState(false);
+  const [ticketDatos, setTicketDatos] = useState<DatosTicket | null>(null);
+
+  const cerrarTicket = () => {
+    setMostrarTicket(false);
+    setTicketDatos(null);
+  };
 
   const cargarPedidos = async () => {
     try {
@@ -148,10 +159,40 @@ export default function PedidosIndex() {
     if (!pedidoACobrar) return;
     setProcesando(true);
     try {
-      await entregarPedido(pedidoACobrar, metodoPago);
+      const ventaId = await entregarPedido(pedidoACobrar, metodoPago);
+      
+      const conf = await db.select().from(configuracion).where(eq(configuracion.clave, "nombre_negocio")).limit(1);
+      const negocio = conf[0]?.valor || "Postrapi";
+      
+      const items = await getPedidoItems(pedidoACobrar);
+      const itemsConInfo = await Promise.all(
+        items.map(async (item) => {
+          const prod = await db.select().from(productos).where(eq(productos.id, item.productoId)).limit(1);
+          return {
+            nombre: prod[0]?.nombre || "Producto",
+            cantidad: item.cantidad,
+            precioUnitario: prod[0]?.precio || 0,
+            subtotal: item.cantidad * (prod[0]?.precio || 0)
+          };
+        })
+      );
+      const total = itemsConInfo.reduce((acc, curr) => acc + curr.subtotal, 0);
+
+      const ticket: DatosTicket = {
+        negocio,
+        fecha: new Date().toISOString(),
+        items: itemsConInfo,
+        total,
+        metodoPago,
+        ventaId
+      };
+
       setModalCobro(false);
       setPedidoACobrar(null);
       cargarPedidos();
+      
+      setTicketDatos(ticket);
+      setMostrarTicket(true);
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "No se pudo entregar y cobrar el pedido.");
@@ -450,6 +491,13 @@ export default function PedidosIndex() {
           </View>
         </View>
       </Modal>
+
+      {/* Modal Ticket */}
+      <TicketModal 
+        visible={mostrarTicket}
+        datos={ticketDatos}
+        onClose={cerrarTicket}
+      />
     </View>
   );
 }
