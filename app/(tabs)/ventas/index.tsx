@@ -349,30 +349,16 @@ export default function VentasIndex() {
           }}
         >
           <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: "transparent",
-              borderWidth: 1.5,
-              borderColor: "#F97316",
-              borderRadius: 10,
-              padding: 14,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: "#F97316", fontWeight: "600", fontSize: 13 }}>Registrar pedido</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
             onPress={() => setModalCobro(true)}
             style={{
               flex: 1,
               backgroundColor: "#F97316",
               borderRadius: 10,
-              padding: 14,
+              padding: 18,
               alignItems: "center",
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>Cobrar ahora</Text>
+            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Cobrar ahora</Text>
           </TouchableOpacity>
         </View>
       )}

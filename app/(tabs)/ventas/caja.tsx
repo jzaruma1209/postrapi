@@ -7,10 +7,11 @@ import {
   getCajaAbierta,
   abrirCaja,
   cerrarCaja,
-  getHistorialVentas,
-  getTotalGastosFecha,
+  getVentasEnRango,
+  getGastosEnRango,
 } from "../../../src/services/ventas.service";
 import { getPedidosPendientesCount } from "../../../src/services/pedidos.service";
+import { nowISO } from "../../../src/utils/dates";
 import PinModal from "../../../src/components/shared/PinModal";
 import type { CajaDiaria } from "../../../src/db/schema";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
@@ -43,20 +44,20 @@ export default function GestionCaja() {
       setCaja(activeCaja);
 
       if (activeCaja) {
-        // Cargar ventas del día de la caja
-        const ventasDia = await getHistorialVentas(activeCaja.fecha);
+        // Filtrar ventas y gastos por el rango de esta sesión de caja
+        const hasta = activeCaja.cerrada_at ?? nowISO();
+        const ventasCaja = await getVentasEnRango(activeCaja.created_at, hasta);
         let efec = 0;
         let trans = 0;
-        ventasDia.forEach((v) => {
+        for (const v of ventasCaja) {
           if (v.metodoPago === "efectivo") efec += v.total;
           else if (v.metodoPago === "transferencia") trans += v.total;
-        });
+        }
 
         setTotalEfectivo(efec);
         setTotalTransferencia(trans);
 
-        // Cargar gastos del día de la caja
-        const gts = await getTotalGastosFecha(activeCaja.fecha);
+        const gts = await getGastosEnRango(activeCaja.created_at, hasta);
         setTotalGastos(gts);
       } else {
         setTotalEfectivo(0);
@@ -143,6 +144,7 @@ export default function GestionCaja() {
         style={{
           flexDirection: "row",
           alignItems: "center",
+          justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingTop: 48,
           paddingBottom: 16,
@@ -152,6 +154,11 @@ export default function GestionCaja() {
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <Feather name="arrow-left" size={20} color={colors.text} />
           <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Caja Diaria</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => router.push("/ventas/historial-cajas")} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Feather name="list" size={18} color={colors.textLight} />
+          <Text style={{ fontSize: 13, color: colors.textLight }}>Historial</Text>
         </TouchableOpacity>
       </View>
 

@@ -213,11 +213,46 @@ export async function getCajaAbierta() {
   return result[0] ?? null;
 }
 
+export async function getHistorialCajas() {
+  return await db
+    .select()
+    .from(cajaDiaria)
+    .where(sql`cerrada_at IS NOT NULL`)
+    .orderBy(desc(cajaDiaria.created_at));
+}
+
 export async function getTotalGastosFecha(fecha: string): Promise<number> {
   const result = await db
     .select({ total: sql<number>`COALESCE(SUM(monto), 0)` })
     .from(gastos)
     .where(eq(gastos.fecha, fecha));
+  return result[0]?.total ?? 0;
+}
+
+// ─── VENTAS EN RANGO (por sesión de caja) ────────────────
+export async function getVentasEnRango(desde: string, hasta: string) {
+  return await db
+    .select()
+    .from(ventas)
+    .where(
+      and(
+        gte(ventas.created_at, desde),
+        lte(ventas.created_at, hasta)
+      )
+    )
+    .orderBy(desc(ventas.created_at));
+}
+
+export async function getGastosEnRango(desde: string, hasta: string): Promise<number> {
+  const result = await db
+    .select({ total: sql<number>`COALESCE(SUM(monto), 0)` })
+    .from(gastos)
+    .where(
+      and(
+        gte(gastos.created_at, desde),
+        lte(gastos.created_at, hasta)
+      )
+    );
   return result[0]?.total ?? 0;
 }
 
