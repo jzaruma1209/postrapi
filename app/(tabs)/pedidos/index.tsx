@@ -194,8 +194,25 @@ export default function PedidosIndex() {
       setTicketDatos(ticket);
       setMostrarTicket(true);
     } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "No se pudo entregar y cobrar el pedido.");
+      const errorMsg = (err as Error).message || "";
+      if (errorMsg.includes("No hay una caja abierta")) {
+        console.log("Caja cerrada:", errorMsg);
+        Alert.alert(
+          "Caja Cerrada",
+          "Debes abrir la caja antes de cobrar el pedido.",
+          [
+            { text: "Ir a Caja", onPress: () => {
+              setModalCobro(false);
+              setPedidoACobrar(null);
+              router.push("/ventas/caja");
+            }},
+            { text: "Cancelar", style: "cancel" }
+          ]
+        );
+      } else {
+        console.error(err);
+        Alert.alert("Error", errorMsg || "No se pudo entregar y cobrar el pedido.");
+      }
     } finally {
       setProcesando(false);
     }
@@ -239,8 +256,34 @@ export default function PedidosIndex() {
       setOrigen("en_persona");
       cargarPedidos();
     } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "No se pudo crear el pedido.");
+      const errorMsg = (err as Error).message || "";
+      if (errorMsg.includes("No hay una caja abierta")) {
+        console.log("Caja cerrada:", errorMsg);
+        Alert.alert(
+          "Caja Cerrada",
+          "Debes abrir la caja antes de crear un pedido.",
+          [
+            { text: "Ir a Caja", onPress: () => {
+              setCarritoNuevo([]);
+              setClienteNombre("");
+              setNota("");
+              setOrigen("en_persona");
+              setModalNuevo(false);
+              router.push("/ventas/caja");
+            }},
+            { text: "Cancelar", style: "cancel", onPress: () => {
+              setCarritoNuevo([]);
+              setClienteNombre("");
+              setNota("");
+              setOrigen("en_persona");
+              setModalNuevo(false);
+            }}
+          ]
+        );
+      } else {
+        console.error(err);
+        Alert.alert("Error", errorMsg || "No se pudo crear el pedido.");
+      }
     } finally {
       setProcesando(false);
     }
@@ -374,7 +417,7 @@ export default function PedidosIndex() {
       </ScrollView>
 
       {/* Modal Nuevo Pedido */}
-      <Modal visible={modalNuevo} transparent animationType="slide" onRequestClose={() => setModalNuevo(false)}>
+      <Modal visible={modalNuevo} transparent animationType="slide" onRequestClose={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, height: "85%" }}>
             <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
@@ -445,7 +488,7 @@ export default function PedidosIndex() {
             </ScrollView>
 
             <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-              <TouchableOpacity onPress={() => setModalNuevo(false)} disabled={procesando} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
+              <TouchableOpacity onPress={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }} disabled={procesando} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
                 <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={confirmarCrearPedido} disabled={procesando} style={{ flex: 1, backgroundColor: procesando ? "#aaa" : "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>

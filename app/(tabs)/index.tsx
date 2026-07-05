@@ -220,6 +220,32 @@ export default function ResumenIndex() {
         </TouchableOpacity>
       </View>
 
+      {filtroActivo === "otro" && (
+        <TouchableOpacity
+          onPress={() => setShowPicker(true)}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            alignSelf: "center",
+            backgroundColor: colors.bgChip,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 20,
+            gap: 6,
+            marginBottom: 16,
+          }}
+        >
+          <Feather name="calendar" size={14} color={colors.textLight} />
+          <Text style={{ color: colors.textLight, fontSize: 13 }}>
+            {new Date(fechaSeleccionada + "T12:00:00.000Z").toLocaleDateString("es-ES", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {showPicker && (
         <DateTimePicker
           value={new Date(fechaSeleccionada + "T12:00:00.000Z")}

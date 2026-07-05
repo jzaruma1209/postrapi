@@ -3,7 +3,7 @@ import { pedidos, pedidoItems, productos } from "../db/schema";
 import { eq, and, ne, desc, gte, lte } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
 import { nowISO, todayDate } from "../utils/dates";
-import { crearVenta } from "./ventas.service";
+import { crearVenta, getCajaAbierta } from "./ventas.service";
 import type { OrigenPedido, EstadoPedido, MetodoPago } from "../utils/types";
 
 export interface ItemPedido {
@@ -21,6 +21,12 @@ export interface CrearPedidoParams {
 }
 
 export async function crearPedido(params: CrearPedidoParams): Promise<string> {
+  // Validar que haya caja abierta antes de crear pedido
+  const cajaAbierta = await getCajaAbierta();
+  if (!cajaAbierta) {
+    throw new Error("No hay una caja abierta. Debes abrir caja antes de crear un pedido.");
+  }
+
   const { items, clienteNombre, nota, origen } = params;
   const pedidoId = generateId();
   const now = nowISO();

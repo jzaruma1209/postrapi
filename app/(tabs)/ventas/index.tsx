@@ -6,8 +6,10 @@ import {
   ScrollView,
   Modal,
   Alert,
+  Platform,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
+import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
 import { eq } from "drizzle-orm";
 import { db } from "../../../src/db";
@@ -94,10 +96,14 @@ export default function VentasIndex() {
           "Debes abrir la caja antes de registrar una venta.",
           [
             { text: "Ir a Caja", onPress: () => {
+              limpiarCarrito();
               setModalCobro(false);
               router.push("/ventas/caja");
             }},
-            { text: "Cancelar", style: "cancel" }
+            { text: "Cancelar", style: "cancel", onPress: () => {
+              limpiarCarrito();
+              setModalCobro(false);
+            }}
           ]
         );
         setProcesando(false);
@@ -110,6 +116,7 @@ export default function VentasIndex() {
           `La caja actual se abrió el día anterior (${cajaAbierta.fecha}). ¿Deseas continuar vendiendo en ella? (Requiere PIN de supervisor)`,
           [
             { text: "No, ir a cerrar caja", onPress: () => {
+              limpiarCarrito();
               setModalCobro(false);
               router.push("/ventas/caja");
             }},
@@ -163,7 +170,7 @@ export default function VentasIndex() {
 
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "No se pudo procesar la venta.");
+      Alert.alert("Error", (error as Error).message || "No se pudo procesar la venta.");
     } finally {
       setProcesando(false);
     }
@@ -256,7 +263,11 @@ export default function VentasIndex() {
       </View>
 
       {/* Grid de Productos */}
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ padding: 16, paddingBottom: 220 }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
           {listaProductos.map((prod) => {
             const qty = getCantidadEnCarrito(prod.id);
@@ -337,34 +348,36 @@ export default function VentasIndex() {
 
       {/* Barra Inferior (Carrito) */}
       {carrito.length > 0 && (
-        <View
-          style={{
-            backgroundColor: colors.bgCard,
-            padding: 16,
-            borderTopWidth: isDark ? 0.5 : 1,
-            borderTopColor: colors.border,
-            flexDirection: "row",
-            gap: 12,
-            ...(isDark ? {} : (colors.shadow ?? {})),
-          }}
-        >
-          <TouchableOpacity
-            onPress={() => setModalCobro(true)}
+        <View style={{ position: 'absolute', bottom: 104, left: 16, right: 16, borderRadius: 16, overflow: 'hidden' }}>
+          <BlurView
+            intensity={Platform.OS === "android" ? 65 : 40}
+            tint={isDark ? "dark" : "light"}
             style={{
-              flex: 1,
-              backgroundColor: "#F97316",
-              borderRadius: 10,
-              padding: 18,
-              alignItems: "center",
+              flexDirection: "row",
+              padding: 16,
+              gap: 12,
+              borderWidth: 0.5,
+              borderColor: colors.border,
             }}
           >
-            <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Cobrar ahora</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setModalCobro(true)}
+              style={{
+                flex: 1,
+                backgroundColor: "#F97316",
+                borderRadius: 10,
+                padding: 18,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>Cobrar ahora</Text>
+            </TouchableOpacity>
+          </BlurView>
         </View>
       )}
 
       {/* Modal Cobro */}
-      <Modal visible={modalCobro} transparent animationType="slide" onRequestClose={() => setModalCobro(false)}>
+      <Modal visible={modalCobro} transparent animationType="slide" onRequestClose={() => { limpiarCarrito(); setModalCobro(false); }}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View
             style={{
@@ -431,7 +444,7 @@ export default function VentasIndex() {
 
             <View style={{ flexDirection: "row", gap: 12 }}>
               <TouchableOpacity
-                onPress={() => setModalCobro(false)}
+                onPress={() => { limpiarCarrito(); setModalCobro(false); }}
                 disabled={procesando}
                 style={{
                   flex: 1,

@@ -30,6 +30,12 @@ export interface VentaConItems {
 // ─── CREAR VENTA ──────────────────────────────────────────
 // CRÍTICO: Todo en una sola transacción SQLite
 export async function crearVenta(params: CrearVentaParams): Promise<string> {
+  // Validar que haya caja abierta antes de cobrar (DEBE ser la primera operación)
+  const cajaAbierta = await getCajaAbierta();
+  if (!cajaAbierta) {
+    throw new Error("No hay una caja abierta. Debes abrir caja antes de cobrar.");
+  }
+
   const { items, metodoPago, pedidoId } = params;
   const ventaId = generateId();
   const now = nowISO();
