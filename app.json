@@ -36,7 +36,8 @@
           "enableFTS": true,
           "useSQLCipher": false
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "newArchEnabled": true,
     "experiments": {

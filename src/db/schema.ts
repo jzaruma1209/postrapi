@@ -130,7 +130,8 @@ export const gastos = sqliteTable("gastos", {
 export const cajaDiaria = sqliteTable("caja_diaria", {
   id: text("id").primaryKey(),
   montoInicial: real("monto_inicial").notNull(),
-  montoDeclarado: real("monto_declarado"),
+  montoDeclaradoEfectivo: real("monto_declarado_efectivo"),
+  montoDeclaradoTransferencia: real("monto_declarado_transferencia"),
   fecha: text("fecha").notNull(),
   cerrada_at: text("cerrada_at"),
   created_at: text("created_at").notNull(),

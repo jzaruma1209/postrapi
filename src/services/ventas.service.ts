@@ -136,13 +136,17 @@ export async function getVentasHoy() {
 // ─── TOTAL VENTAS DEL DÍA ─────────────────────────────────
 export async function getTotalVentasHoy(): Promise<number> {
   const hoy = todayDate();
+  return getTotalVentasPorFecha(hoy);
+}
+
+export async function getTotalVentasPorFecha(fecha: string): Promise<number> {
   const result = await db
     .select({ total: sql<number>`COALESCE(SUM(total), 0)` })
     .from(ventas)
     .where(
       and(
-        gte(ventas.created_at, `${hoy}T00:00:00.000Z`),
-        lte(ventas.created_at, `${hoy}T23:59:59.999Z`)
+        gte(ventas.created_at, `${fecha}T00:00:00.000Z`),
+        lte(ventas.created_at, `${fecha}T23:59:59.999Z`)
       )
     );
   return result[0]?.total ?? 0;
@@ -177,7 +181,8 @@ export async function abrirCaja(montoInicial: number): Promise<string> {
   await db.insert(cajaDiaria).values({
     id,
     montoInicial,
-    montoDeclarado: null,
+    montoDeclaradoEfectivo: null,
+    montoDeclaradoTransferencia: null,
     fecha: todayDate(),
     cerrada_at: null,
     created_at: nowISO(),
@@ -186,10 +191,10 @@ export async function abrirCaja(montoInicial: number): Promise<string> {
   return id;
 }
 
-export async function cerrarCaja(cajaId: string, montoDeclarado: number): Promise<void> {
+export async function cerrarCaja(cajaId: string, montoEfectivo: number, montoTransferencia: number): Promise<void> {
   await db
     .update(cajaDiaria)
-    .set({ montoDeclarado, cerrada_at: nowISO() })
+    .set({ montoDeclaradoEfectivo: montoEfectivo, montoDeclaradoTransferencia: montoTransferencia, cerrada_at: nowISO() })
     .where(eq(cajaDiaria.id, cajaId));
 }
 
@@ -211,6 +216,33 @@ export async function getCajaAbierta() {
     .orderBy(desc(cajaDiaria.created_at))
     .limit(1);
   return result[0] ?? null;
+}
+
+export async function getCajasDeHoy() {
+  const hoy = todayDate();
+  return await db
+    .select()
+    .from(cajaDiaria)
+    .where(
+      and(
+        gte(cajaDiaria.created_at, `${hoy}T00:00:00.000Z`),
+        lte(cajaDiaria.created_at, `${hoy}T23:59:59.999Z`)
+      )
+    )
+    .orderBy(cajaDiaria.created_at);
+}
+
+export async function getCajasPorFecha(fecha: string) {
+  return await db
+    .select()
+    .from(cajaDiaria)
+    .where(
+      and(
+        gte(cajaDiaria.created_at, `${fecha}T00:00:00.000Z`),
+        lte(cajaDiaria.created_at, `${fecha}T23:59:59.999Z`)
+      )
+    )
+    .orderBy(cajaDiaria.created_at);
 }
 
 export async function getHistorialCajas() {
@@ -258,7 +290,10 @@ export async function getGastosEnRango(desde: string, hasta: string): Promise<nu
 
 // ─── TOP PRODUCTOS DEL DÍA ────────────────────────────────
 export async function getTopProductosHoy(limit = 3) {
-  const hoy = todayDate();
+  return getTopProductosPorFecha(todayDate(), limit);
+}
+
+export async function getTopProductosPorFecha(fecha: string, limit = 3) {
   return await db
     .select({
       productoId: ventaItems.productoId,
@@ -268,8 +303,8 @@ export async function getTopProductosHoy(limit = 3) {
     .innerJoin(ventas, eq(ventaItems.ventaId, ventas.id))
     .where(
       and(
-        gte(ventas.created_at, `${hoy}T00:00:00.000Z`),
-        lte(ventas.created_at, `${hoy}T23:59:59.999Z`)
+        gte(ventas.created_at, `${fecha}T00:00:00.000Z`),
+        lte(ventas.created_at, `${fecha}T23:59:59.999Z`)
       )
     )
     .groupBy(ventaItems.productoId)

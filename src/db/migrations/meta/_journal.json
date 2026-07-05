@@ -8,6 +8,13 @@
       "when": 1781587320374,
       "tag": "0000_pretty_roughhouse",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781683200000,
+      "tag": "0001_rename_monto_declarado",
+      "breakpoints": true
     }
   ]
 }

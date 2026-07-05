@@ -7,10 +7,10 @@ import {
   getCajasPorFecha,
   getVentasEnRango,
   getGastosEnRango,
-} from "../../../src/services/ventas.service";
-import { todayDate } from "../../../src/utils/dates";
-import type { CajaDiaria } from "../../../src/db/schema";
-import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
+} from "../../src/services/ventas.service";
+import { nowISO, todayDate } from "../../src/utils/dates";
+import type { CajaDiaria } from "../../src/db/schema";
+import { useColors, useThemeStore } from "../../src/stores/useThemeStore";
 
 type CajaConResumen = CajaDiaria & {
   totalEfectivo: number;
@@ -22,7 +22,7 @@ type CajaConResumen = CajaDiaria & {
   diferenciaTransferencia: number;
 };
 
-export default function HistorialCajas() {
+export default function ResumenCajas() {
   const colors = useColors();
   const isDark = useThemeStore((s) => s.isDark);
   const router = useRouter();
@@ -37,11 +37,10 @@ export default function HistorialCajas() {
     setCargando(true);
     try {
       const data = await getCajasPorFecha(fecha);
-      const cerradas = data.filter((c) => c.cerrada_at !== null);
       const conResumen: CajaConResumen[] = [];
 
-      for (const c of cerradas) {
-        const hasta = c.cerrada_at!;
+      for (const c of data) {
+        const hasta = c.cerrada_at ?? nowISO();
         const ventasCaja = await getVentasEnRango(c.created_at, hasta);
         let efec = 0;
         let trans = 0;
@@ -68,7 +67,7 @@ export default function HistorialCajas() {
 
       setCajas(conResumen);
     } catch (error) {
-      console.error("Error al cargar historial de cajas:", error);
+      console.error("Error al cargar cajas:", error);
     } finally {
       setCargando(false);
     }
@@ -133,7 +132,7 @@ export default function HistorialCajas() {
       >
         <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
           <Feather name="arrow-left" size={20} color={colors.text} />
-          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Historial de Cajas</Text>
+          <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Cajas de hoy</Text>
         </TouchableOpacity>
       </View>
 
@@ -197,88 +196,98 @@ export default function HistorialCajas() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-          {cajas.map((c) => (
-            <View
-              key={c.id}
-              style={{
-                backgroundColor: colors.bgCard,
-                borderRadius: 14,
-                borderWidth: 0.5,
-                borderColor: colors.border,
-                borderLeftWidth: 3,
-                borderLeftColor: "#F97316",
-                padding: 16,
-                gap: 8,
-              }}
-            >
-              {/* Fechas */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                  Apertura: {formatFecha(c.created_at)} {formatHora(c.created_at)}
-                </Text>
-                <Text style={{ fontSize: 11, color: colors.textMuted }}>
-                  Cierre: {formatFecha(c.cerrada_at!)} {formatHora(c.cerrada_at!)}
-                </Text>
-              </View>
+          {cajas.map((c) => {
+            const abierta = !c.cerrada_at;
+            return (
+              <View
+                key={c.id}
+                style={{
+                  backgroundColor: colors.bgCard,
+                  borderRadius: 14,
+                  borderWidth: 0.5,
+                  borderColor: colors.border,
+                  borderLeftWidth: 3,
+                  borderLeftColor: abierta ? "#22c55e" : "#F97316",
+                  padding: 16,
+                  gap: 8,
+                }}
+              >
+                {/* Fechas */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                    Apertura: {formatFecha(c.created_at)} {formatHora(c.created_at)}
+                  </Text>
+                  {abierta ? (
+                    <Text style={{ fontSize: 11, color: "#22c55e", fontWeight: "bold" }}>ABIERTA</Text>
+                  ) : (
+                    <Text style={{ fontSize: 11, color: colors.textMuted }}>
+                      Cierre: {formatFecha(c.cerrada_at!)} {formatHora(c.cerrada_at!)}
+                    </Text>
+                  )}
+                </View>
 
-              {/* Montos */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Monto Inicial</Text>
-                <Text style={{ color: colors.textLight, fontSize: 13 }}>${c.montoInicial.toFixed(2)}</Text>
-              </View>
+                {/* Montos */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Monto Inicial</Text>
+                  <Text style={{ color: colors.textLight, fontSize: 13 }}>${c.montoInicial.toFixed(2)}</Text>
+                </View>
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Total Esperado Efectivo</Text>
-                <Text style={{ color: "#F97316", fontSize: 14, fontWeight: "bold" }}>${c.esperado.toFixed(2)}</Text>
-              </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Total Esperado Efectivo</Text>
+                  <Text style={{ color: "#F97316", fontSize: 14, fontWeight: "bold" }}>${c.esperado.toFixed(2)}</Text>
+                </View>
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Efectivo Declarado</Text>
-                <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>${(c.montoDeclaradoEfectivo || 0).toFixed(2)}</Text>
-              </View>
+                {!abierta && (
+                  <>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 13 }}>Efectivo Declarado</Text>
+                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>${(c.montoDeclaradoEfectivo || 0).toFixed(2)}</Text>
+                    </View>
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Total Esperado Transferencia</Text>
-                <Text style={{ color: "#F97316", fontSize: 14, fontWeight: "bold" }}>${c.esperadoTransferencia.toFixed(2)}</Text>
-              </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 13 }}>Total Esperado Transferencia</Text>
+                      <Text style={{ color: "#F97316", fontSize: 14, fontWeight: "bold" }}>${c.esperadoTransferencia.toFixed(2)}</Text>
+                    </View>
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
-                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Transferencia Declarado</Text>
-                <Text style={{ color: "#38bdf8", fontSize: 13, fontWeight: "500" }}>
-                  {c.montoDeclaradoTransferencia !== null && c.montoDeclaradoTransferencia !== undefined
-                    ? `$${c.montoDeclaradoTransferencia.toFixed(2)}`
-                    : "N/A"}
-                </Text>
-              </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
+                      <Text style={{ color: colors.textMuted, fontSize: 13 }}>Transferencia Declarado</Text>
+                      <Text style={{ color: "#38bdf8", fontSize: 13, fontWeight: "500" }}>
+                        {c.montoDeclaradoTransferencia !== null && c.montoDeclaradoTransferencia !== undefined
+                          ? `$${c.montoDeclaradoTransferencia.toFixed(2)}`
+                          : "N/A"}
+                      </Text>
+                    </View>
 
-              {/* Diferencias */}
-              <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
-                <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia Efectivo</Text>
-                <Text
-                  style={{
-                    color: c.diferencia >= 0 ? "#22c55e" : "#ef4444",
-                    fontSize: 14,
-                    fontWeight: "bold",
-                  }}
-                >
-                  {c.diferencia > 0 ? "+" : ""}{c.diferencia.toFixed(2)}
-                </Text>
-              </View>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 8 }}>
+                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia Efectivo</Text>
+                      <Text
+                        style={{
+                          color: c.diferencia >= 0 ? "#22c55e" : "#ef4444",
+                          fontSize: 14,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {c.diferencia > 0 ? "+" : ""}{c.diferencia.toFixed(2)}
+                      </Text>
+                    </View>
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 4 }}>
-                <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia Transferencia</Text>
-                <Text
-                  style={{
-                    color: c.diferenciaTransferencia >= 0 ? "#22c55e" : "#ef4444",
-                    fontSize: 14,
-                    fontWeight: "bold",
-                  }}
-                >
-                  {c.diferenciaTransferencia > 0 ? "+" : ""}{c.diferenciaTransferencia.toFixed(2)}
-                </Text>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 4 }}>
+                      <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia Transferencia</Text>
+                      <Text
+                        style={{
+                          color: c.diferenciaTransferencia >= 0 ? "#22c55e" : "#ef4444",
+                          fontSize: 14,
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {c.diferenciaTransferencia > 0 ? "+" : ""}{c.diferenciaTransferencia.toFixed(2)}
+                      </Text>
+                    </View>
+                  </>
+                )}
               </View>
-            </View>
-          ))}
+            );
+          })}
 
           {cajas.length === 0 && !cargando && (
             <Text style={{ color: colors.textMuted, textAlign: "center", marginTop: 40 }}>

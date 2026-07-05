@@ -225,16 +225,18 @@ export async function getTotalGastosHoy(): Promise<number> {
 // ─── COSTO INGREDIENTES USADOS HOY ───────────────────────
 // Para ganancia estimada en Resumen
 export async function getCostoIngredientesHoy(): Promise<number> {
-  const hoy = todayDate();
+  return getCostoIngredientesPorFecha(todayDate());
+}
 
+export async function getCostoIngredientesPorFecha(fecha: string): Promise<number> {
   const movimientos = await db
     .select()
     .from(movimientosInventario)
     .where(
       and(
         eq(movimientosInventario.tipo, "descuento_venta"),
-        gte(movimientosInventario.created_at, `${hoy}T00:00:00.000Z`),
-        lte(movimientosInventario.created_at, `${hoy}T23:59:59.999Z`)
+        gte(movimientosInventario.created_at, `${fecha}T00:00:00.000Z`),
+        lte(movimientosInventario.created_at, `${fecha}T23:59:59.999Z`)
       )
     );
 

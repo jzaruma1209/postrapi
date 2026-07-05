@@ -129,13 +129,30 @@ export async function runMigrations(): Promise<void> {
     CREATE TABLE IF NOT EXISTS caja_diaria (
       id TEXT PRIMARY KEY,
       monto_inicial REAL NOT NULL,
-      monto_declarado REAL,
+      monto_declarado_efectivo REAL,
+      monto_declarado_transferencia REAL,
       fecha TEXT NOT NULL,
       cerrada_at TEXT,
       created_at TEXT NOT NULL,
       synced INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  // Migración 0001: renombrar columna (solo si la vieja aún existe)
+  try {
+    await db.run(sql`
+      ALTER TABLE caja_diaria RENAME COLUMN monto_declarado TO monto_declarado_efectivo;
+    `);
+  } catch {
+    // columna ya renombrada o no existe
+  }
+  try {
+    await db.run(sql`
+      ALTER TABLE caja_diaria ADD COLUMN monto_declarado_transferencia REAL;
+    `);
+  } catch {
+    // columna ya existe
+  }
 
   await db.run(sql`
     CREATE TABLE IF NOT EXISTS configuracion (

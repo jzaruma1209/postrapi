@@ -1,18 +1,20 @@
 import { useState, useCallback, useMemo } from "react";
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import {
-  getTotalVentasHoy,
-  getTopProductosHoy,
+  getTotalVentasPorFecha,
+  getTotalGastosFecha,
+  getTopProductosPorFecha,
 } from "../../src/services/ventas.service";
 import {
-  getTotalGastosHoy,
-  getCostoIngredientesHoy,
+  getCostoIngredientesPorFecha,
   getIngredientesStockBajo,
 } from "../../src/services/inventario.service";
 import { getPedidosActivos } from "../../src/services/pedidos.service";
 import { calcularGanancia, formatearGanancia, formatearCantidad } from "../../src/utils/calculos";
+import { todayDate } from "../../src/utils/dates";
 import { db } from "../../src/db";
 import { productos } from "../../src/db/schema";
 import type { Pedido, Ingrediente } from "../../src/db/schema";
@@ -34,39 +36,46 @@ export default function ResumenIndex() {
   const [ingredientesBajos, setIngredientesBajos] = useState<Ingrediente[]>([]);
   const [topProductos, setTopProductos] = useState<{nombre: string, cantidad: number}[]>([]);
 
-  // Current Date Formatting (e.g. "Martes 10 junio")
-  const fechaHoyStr = useMemo(() => {
-    const fecha = new Date();
-    const opciones: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
-    const formateada = fecha.toLocaleDateString('es-ES', opciones);
-    return formateada.charAt(0).toUpperCase() + formateada.slice(1);
-  }, []);
+  // Date selector
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(todayDate());
+  const [showPicker, setShowPicker] = useState(false);
+  type FiltroActivo = "hoy" | "ayer" | "otro";
+  const [filtroActivo, setFiltroActivo] = useState<FiltroActivo>("hoy");
+  const esHoy = fechaSeleccionada === todayDate();
 
-  const cargarDashboard = async () => {
+  // Date Formatting (e.g. "Martes 10 junio")
+  const fechaStr = useMemo(() => {
+    const d = new Date(fechaSeleccionada + "T12:00:00.000Z");
+    return d.toLocaleDateString("es-ES", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).replace(/^\w/, (c) => c.toUpperCase());
+  }, [fechaSeleccionada]);
+
+  const cargarDashboard = async (fecha: string) => {
     try {
       setCargando(true);
       const [
         totalVentas,
         totalGastos,
         costoIngredientes,
-        activos,
         bajos,
         topProdIds,
         listaProductos
       ] = await Promise.all([
-        getTotalVentasHoy(),
-        getTotalGastosHoy(),
-        getCostoIngredientesHoy(),
-        getPedidosActivos(),
+        getTotalVentasPorFecha(fecha),
+        getTotalGastosFecha(fecha),
+        getCostoIngredientesPorFecha(fecha),
         getIngredientesStockBajo(),
-        getTopProductosHoy(3),
+        getTopProductosPorFecha(fecha, 3),
         db.select().from(productos)
       ]);
 
       setVentas(totalVentas);
       setGastos(totalGastos);
       setCostoIng(costoIngredientes);
-      setPedidosPendientes(activos);
       setIngredientesBajos(bajos);
 
       const topMapped = topProdIds.map(tp => {
@@ -78,6 +87,12 @@ export default function ResumenIndex() {
       });
       setTopProductos(topMapped);
 
+      if (fecha === todayDate()) {
+        const activos = await getPedidosActivos();
+        setPedidosPendientes(activos);
+      } else {
+        setPedidosPendientes([]);
+      }
     } catch (error) {
       console.error("Error cargando dashboard:", error);
     } finally {
@@ -87,9 +102,33 @@ export default function ResumenIndex() {
 
   useFocusEffect(
     useCallback(() => {
-      cargarDashboard();
-    }, [])
+      cargarDashboard(fechaSeleccionada);
+    }, [fechaSeleccionada])
   );
+
+  const seleccionarHoy = () => {
+    setFiltroActivo("hoy");
+    setFechaSeleccionada(todayDate());
+  };
+
+  const seleccionarAyer = () => {
+    setFiltroActivo("ayer");
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    setFechaSeleccionada(d.toISOString().split("T")[0]);
+  };
+
+  const seleccionarOtros = () => {
+    setFiltroActivo("otro");
+    setShowPicker(true);
+  };
+
+  const seleccionarFecha = (_: any, date?: Date) => {
+    setShowPicker(Platform.OS === "ios");
+    if (date) {
+      setFechaSeleccionada(date.toISOString().split("T")[0]);
+    }
+  };
 
   const ganancia = calcularGanancia(ventas, gastos, costoIng);
   const isGananciaPositiva = ganancia >= 0;
@@ -112,13 +151,13 @@ export default function ResumenIndex() {
           justifyContent: "space-between",
           paddingHorizontal: 16,
           paddingTop: 48,
-          paddingBottom: 24,
+          paddingBottom: 16,
           backgroundColor: colors.bg,
         }}
       >
         <View>
           <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.text }}>Postrapi</Text>
-          <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2 }}>{fechaHoyStr}</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 2 }}>{fechaStr}</Text>
         </View>
         <TouchableOpacity
           style={{
@@ -136,6 +175,60 @@ export default function ResumenIndex() {
         </TouchableOpacity>
       </View>
 
+      {/* Selector de Fecha */}
+      <View style={{ flexDirection: "row", paddingHorizontal: 16, gap: 12, marginBottom: 16 }}>
+        <TouchableOpacity
+          onPress={seleccionarHoy}
+          style={{
+            backgroundColor: filtroActivo === "hoy" ? "#F97316" : colors.bgChip,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 20,
+          }}
+        >
+          <Text style={{ color: filtroActivo === "hoy" ? "#fff" : colors.textLight, fontSize: 12, fontWeight: "500" }}>
+            Hoy
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={seleccionarAyer}
+          style={{
+            backgroundColor: filtroActivo === "ayer" ? "#F97316" : colors.bgChip,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 20,
+          }}
+        >
+          <Text style={{ color: filtroActivo === "ayer" ? "#fff" : colors.textLight, fontSize: 12, fontWeight: "500" }}>
+            Ayer
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={seleccionarOtros}
+          style={{
+            backgroundColor: filtroActivo === "otro" ? "#F97316" : colors.bgChip,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: 20,
+          }}
+        >
+          <Text style={{ color: filtroActivo === "otro" ? "#fff" : colors.textLight, fontSize: 12, fontWeight: "500" }}>
+            Otros
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {showPicker && (
+        <DateTimePicker
+          value={new Date(fechaSeleccionada + "T12:00:00.000Z")}
+          mode="date"
+          display="default"
+          onChange={seleccionarFecha}
+        />
+      )}
+
       <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 100 }}>
         
         {/* Grid de Métricas 2x2 */}
@@ -150,7 +243,7 @@ export default function ResumenIndex() {
               borderColor: colors.border,
             }}
           >
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>Ventas hoy</Text>
+            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>Ventas</Text>
             <Text style={{ color: "#F97316", fontSize: 22, fontWeight: "bold" }}>${ventas.toFixed(2)}</Text>
           </View>
           <View
@@ -194,10 +287,58 @@ export default function ResumenIndex() {
               borderColor: colors.border,
             }}
           >
-            <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>Pendientes</Text>
-            <Text style={{ color: "#38bdf8", fontSize: 22, fontWeight: "bold" }}>{pedidosPendientes.length}</Text>
+            {esHoy ? (
+              <>
+                <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>Pendientes</Text>
+                <Text style={{ color: "#38bdf8", fontSize: 22, fontWeight: "bold" }}>{pedidosPendientes.length}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 8 }}>Pendientes</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 11, lineHeight: 16 }}>
+                  Solo aplica al día de hoy
+                </Text>
+              </>
+            )}
           </View>
         </View>
+
+        {/* Botón Cajas de Hoy */}
+        <TouchableOpacity 
+          onPress={() => router.push('/resumen-cajas')}
+          style={{
+            backgroundColor: colors.bgCard,
+            padding: 16,
+            borderRadius: 14,
+            borderWidth: isDark ? 0 : 1,
+            borderColor: colors.border,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: isDark ? "#1a0d00" : "#fff4e6",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name="briefcase" size={20} color="#F97316" />
+            </View>
+            <View>
+              <Text style={{ color: colors.text, fontSize: 15, fontWeight: "bold" }}>Cajas de hoy</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>Ver resumen de cajas del día</Text>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.textMuted} />
+        </TouchableOpacity>
+
+
 
         {/* Alertas de Inventario Bajo */}
         {ingredientesBajos.length > 0 && (
@@ -281,7 +422,9 @@ export default function ResumenIndex() {
             borderColor: colors.border,
           }}
         >
-          <Text style={{ color: colors.text, fontSize: 15, fontWeight: "bold", marginBottom: 12 }}>Top hoy</Text>
+          <Text style={{ color: colors.text, fontSize: 15, fontWeight: "bold", marginBottom: 12 }}>
+            {esHoy ? "Top hoy" : "Top vendidos"}
+          </Text>
           {topProductos.length > 0 ? (
             <View style={{ gap: 10 }}>
               {topProductos.map((prod, index) => (
@@ -294,7 +437,7 @@ export default function ResumenIndex() {
             </View>
           ) : (
             <View style={{ paddingVertical: 12, alignItems: "center" }}>
-              <Text style={{ color: colors.textMuted, fontSize: 13 }}>Aún no hay ventas hoy</Text>
+              <Text style={{ color: colors.textMuted, fontSize: 13 }}>Sin ventas este día</Text>
             </View>
           )}
         </View>

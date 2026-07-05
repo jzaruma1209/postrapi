@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import {
@@ -28,7 +28,8 @@ export default function GestionCaja() {
 
   // Formularios
   const [montoInicial, setMontoInicial] = useState("");
-  const [montoContado, setMontoContado] = useState("");
+  const [montoContadoEfectivo, setMontoContadoEfectivo] = useState("");
+  const [montoContadoTransferencia, setMontoContadoTransferencia] = useState("");
   
   // PIN Modal
   const [showPinModal, setShowPinModal] = useState(false);
@@ -90,8 +91,12 @@ export default function GestionCaja() {
   };
 
   const confirmarCierreCaja = async () => {
-    if (!montoContado || isNaN(Number(montoContado.replace(",", ".")))) {
-      Alert.alert("Error", "Ingresa el monto contado físico válido.");
+    if (!montoContadoEfectivo || isNaN(Number(montoContadoEfectivo.replace(",", ".")))) {
+      Alert.alert("Error", "Ingresa el monto contado efectivo válido.");
+      return;
+    }
+    if (!montoContadoTransferencia || isNaN(Number(montoContadoTransferencia.replace(",", ".")))) {
+      Alert.alert("Error", "Ingresa el monto transferencia declarado válido.");
       return;
     }
 
@@ -124,7 +129,7 @@ export default function GestionCaja() {
     setShowPinModal(false);
     if (!caja) return;
     try {
-      await cerrarCaja(caja.id, Number(montoContado.replace(",", ".")));
+      await cerrarCaja(caja.id, Number(montoContadoEfectivo.replace(",", ".")), Number(montoContadoTransferencia.replace(",", ".")));
       Alert.alert("Éxito", "La caja ha sido cerrada correctamente.");
       cargarDatos();
     } catch (error) {
@@ -134,8 +139,11 @@ export default function GestionCaja() {
   };
 
   const esperadoEnCaja = (caja?.montoInicial || 0) + totalEfectivo - totalGastos;
-  const contadoNum = Number(montoContado.replace(",", ".")) || 0;
-  const diferencia = contadoNum - esperadoEnCaja;
+  const contadoEfectivoNum = Number(montoContadoEfectivo.replace(",", ".")) || 0;
+  const diferencia = contadoEfectivoNum - esperadoEnCaja;
+  const esperadoTransferencia = totalTransferencia;
+  const contadoTransferenciaNum = Number(montoContadoTransferencia.replace(",", ".")) || 0;
+  const diferenciaTransferencia = contadoTransferenciaNum - esperadoTransferencia;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -156,13 +164,21 @@ export default function GestionCaja() {
           <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text }}>Caja Diaria</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push("/ventas/historial-cajas")} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Feather name="list" size={18} color={colors.textLight} />
-          <Text style={{ fontSize: 13, color: colors.textLight }}>Historial</Text>
+        <TouchableOpacity onPress={() => router.push("/ventas/historial-cajas")} style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: colors.bgCard, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 0.5, borderColor: colors.border }}>
+          <Feather name="list" size={20} color={colors.textLight} />
+          <Text style={{ fontSize: 14, fontWeight: "500", color: colors.textLight }}>Historial</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <ScrollView
+          contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+        >
         {!caja ? (
           <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border, gap: 16 }}>
             <Text style={{ fontSize: 16, fontWeight: "500", color: colors.text, textAlign: "center", marginBottom: 8 }}>
@@ -246,10 +262,10 @@ export default function GestionCaja() {
             {!caja.cerrada_at ? (
               <View style={{ backgroundColor: colors.bgCard, borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: colors.border, gap: 16 }}>
                 <View>
-                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Monto Contado Físicamente</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Monto Contado Efectivo</Text>
                   <TextInput
-                    value={montoContado}
-                    onChangeText={setMontoContado}
+                    value={montoContadoEfectivo}
+                    onChangeText={setMontoContadoEfectivo}
                     keyboardType="numeric"
                     style={{
                       backgroundColor: colors.bgInput,
@@ -264,11 +280,39 @@ export default function GestionCaja() {
                   />
                 </View>
 
-                {montoContado !== "" && !isNaN(Number(montoContado.replace(",", "."))) && (
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: diferencia === 0 ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#2a1a1a" : "#ffe6e6"), borderRadius: 10, borderWidth: 0.5, borderColor: diferencia === 0 ? "#22c55e" : "#ef4444" }}>
-                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia</Text>
-                    <Text style={{ color: diferencia === 0 ? "#22c55e" : "#ef4444", fontSize: 14, fontWeight: "bold" }}>
+                <View>
+                  <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Monto Transferencia Declarado</Text>
+                  <TextInput
+                    value={montoContadoTransferencia}
+                    onChangeText={setMontoContadoTransferencia}
+                    keyboardType="numeric"
+                    style={{
+                      backgroundColor: colors.bgInput,
+                      color: colors.text,
+                      borderRadius: 10,
+                      padding: 12,
+                      fontSize: 16,
+                      fontWeight: "bold",
+                    }}
+                    placeholderTextColor={colors.textMuted}
+                    placeholder="Ej. 500"
+                  />
+                </View>
+
+                {montoContadoEfectivo !== "" && !isNaN(Number(montoContadoEfectivo.replace(",", "."))) && (
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: diferencia >= 0 ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#2a1a1a" : "#ffe6e6"), borderRadius: 10, borderWidth: 0.5, borderColor: diferencia >= 0 ? "#22c55e" : "#ef4444" }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia Efectivo</Text>
+                    <Text style={{ color: diferencia >= 0 ? "#22c55e" : "#ef4444", fontSize: 14, fontWeight: "bold" }}>
                       {diferencia > 0 ? "+" : ""}{diferencia.toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+
+                {montoContadoTransferencia !== "" && !isNaN(Number(montoContadoTransferencia.replace(",", "."))) && (
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: diferenciaTransferencia >= 0 ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#2a1a1a" : "#ffe6e6"), borderRadius: 10, borderWidth: 0.5, borderColor: diferenciaTransferencia >= 0 ? "#22c55e" : "#ef4444" }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Diferencia Transferencia</Text>
+                    <Text style={{ color: diferenciaTransferencia >= 0 ? "#22c55e" : "#ef4444", fontSize: 14, fontWeight: "bold" }}>
+                      {diferenciaTransferencia > 0 ? "+" : ""}{diferenciaTransferencia.toFixed(2)}
                     </Text>
                   </View>
                 )}
@@ -293,9 +337,15 @@ export default function GestionCaja() {
                     Caja cerrada a las {new Date(caja.cerrada_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: colors.bgInput, borderRadius: 10 }}>
-                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Monto Declarado</Text>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Efectivo Declarado</Text>
                     <Text style={{ color: colors.text, fontSize: 14, fontWeight: "bold" }}>
-                      ${(caja.montoDeclarado || 0).toFixed(2)}
+                      ${(caja.montoDeclaradoEfectivo || 0).toFixed(2)}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", padding: 12, backgroundColor: colors.bgInput, borderRadius: 10, marginTop: 8 }}>
+                    <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>Transferencia Declarado</Text>
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: "bold" }}>
+                      ${(caja.montoDeclaradoTransferencia || 0).toFixed(2)}
                     </Text>
                   </View>
                 </View>
@@ -315,7 +365,8 @@ export default function GestionCaja() {
             )}
           </>
         )}
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {showPinModal && (
         <PinModal
