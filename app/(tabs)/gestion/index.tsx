@@ -1,10 +1,9 @@
-import { useState, useMemo, useCallback } from "react";
+import { useMemo } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import PinModal from "../../../src/components/shared/PinModal";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
+import { useGestionAuth } from "./_layout";
 
 const MENU_ITEMS = [
   {
@@ -41,8 +40,7 @@ export default function GestionIndex() {
   const router = useRouter();
   const colors = useColors();
   const isDark = useThemeStore((s) => s.isDark);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
+  const { isUnlocked } = useGestionAuth();
 
   const fechaHoyStr = useMemo(() => {
     const fecha = new Date();
@@ -51,42 +49,8 @@ export default function GestionIndex() {
     return formateada.charAt(0).toUpperCase() + formateada.slice(1);
   }, []);
 
-  // Cada vez que el usuario enfoca esta pantalla (ya sea la primera vez o
-  // al volver del tab de ventas/pedidos), se resetea la autenticación
-  // y se vuelve a mostrar el modal de PIN.
-  useFocusEffect(
-    useCallback(() => {
-      setIsAuthenticated(false);
-      setShowPinModal(true);
-    }, [])
-  );
-
-  const handlePinSuccess = () => {
-    setShowPinModal(false);
-    setIsAuthenticated(true);
-  };
-
-  const handlePinCancel = () => {
-    setShowPinModal(false);
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace("/");
-    }
-  };
-
-  // Mientras no está autenticado, mostrar pantalla de bloqueo con el modal
-  if (!isAuthenticated) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <PinModal
-          visible={showPinModal}
-          onSuccess={handlePinSuccess}
-          onCancel={handlePinCancel}
-          titulo="PIN de Supervisor"
-        />
-      </View>
-    );
+  if (!isUnlocked) {
+    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   }
 
   return (

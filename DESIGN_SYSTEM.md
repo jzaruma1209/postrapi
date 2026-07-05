@@ -71,19 +71,22 @@ Border radius ícono:    8px
 ## Componentes
 
 ### Tab bar (navegación principal)
-- Fijo en la parte inferior
-- Background: #1a1a1a
-- Border top: 0.5px solid #2a2a2a
+- Estilo "floating" tipo vidrio esmerilado, separado del borde inferior
+- `position: absolute` con `left/right: 16px`, `bottom: 16px`
+- Forma de píldora (`border-radius: 32px`), fondo semi-transparente con blur
+- Implementado con `BlurView` de expo-blur (`tint: "dark"`, `intensity: 50` iOS / `80` Android)
+- Borde sutil: `0.5px solid #2a2a2a` (usando `colors.tabBarBorder` del store)
+- Altura: 64px, con sombra/elevación flotante
 - 6 tabs: Resumen, Ventas, Pedidos, Bodega, Gastos, Gestión
 - Tab inactivo: ícono + label color #555
 - Tab activo: ícono + label color #F97316
-- Íconos sugeridos (usar librería de íconos de Expo/RN):
-  - Resumen → LayoutDashboard
-  - Ventas → ShoppingCart
-  - Pedidos → ClipboardList
-  - Bodega → Package
-  - Gastos → CreditCard
-  - Gestión → Settings
+- Íconos usados (Feather):
+  - Resumen → bar-chart-2
+  - Ventas → shopping-cart
+  - Pedidos → clipboard
+  - Bodega → archive
+  - Gastos → credit-card
+  - Gestión → settings
 
 ---
 

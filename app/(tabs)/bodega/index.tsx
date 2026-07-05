@@ -310,7 +310,7 @@ export default function BodegaIndex() {
           </ScrollView>
 
           {/* Aviso fijo */}
-          <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: isDark ? "#1a1a00" : "#fff4e6", borderTopWidth: 1, borderTopColor: isDark ? "#332b00" : "#fed7aa", padding: 16, flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ position: "absolute", bottom: 100, left: 0, right: 0, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Feather name="lock" size={14} color="#ea580c" />
             <Text style={{ color: "#ea580c", fontSize: 12, fontWeight: "500" }}>El ajuste de stock requiere PIN de supervisor</Text>
           </View>

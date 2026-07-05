@@ -1,6 +1,9 @@
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { Dimensions, Platform, StyleSheet } from "react-native";
+import { BlurView } from "expo-blur";
 import { useThemeStore } from "../../src/stores/useThemeStore";
+import type { ViewStyle } from "react-native";
 
 type FeatherIconName = React.ComponentProps<typeof Feather>["name"];
 
@@ -14,18 +17,33 @@ function TabIcon({ name, color, size = 22 }: TabIconProps) {
   return <Feather name={name} size={size} color={color} />;
 }
 
-export default function TabsLayout() {
-  const isDark = useThemeStore((s) => s.isDark);
-  const colors = useThemeStore((s) => s.colors);
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const TAB_BAR_HORIZONTAL = SCREEN_WIDTH * 0.09;
 
-  const tabBarStyle = {
-    backgroundColor: colors.tabBar,
-    borderTopColor: colors.tabBarBorder,
-    borderTopWidth: isDark ? 0.5 : 1,
+export default function TabsLayout() {
+  const colors = useThemeStore((s) => s.colors);
+  const isDark = useThemeStore((s) => s.isDark);
+
+  const tabBarStyle: ViewStyle = {
+    position: "absolute",
+    left: TAB_BAR_HORIZONTAL,
+    right: TAB_BAR_HORIZONTAL,
+    bottom: 32,
     height: 64,
-    paddingBottom: 10,
+    borderRadius: 32,
+    borderTopWidth: 0,
+    backgroundColor: "transparent",
+    paddingBottom: 8,
     paddingTop: 8,
-    ...(isDark ? {} : (colors.shadow ?? {})),
+    overflow: "hidden",
+    ...(Platform.OS === "android"
+      ? { elevation: 12 }
+      : {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 8,
+        }),
   };
 
   return (
@@ -40,6 +58,19 @@ export default function TabsLayout() {
           fontWeight: "500",
           marginTop: 2,
         },
+        tabBarBackground: () => (
+          <BlurView
+            intensity={Platform.OS === "android" ? 65 : 40}
+            tint={isDark ? "dark" : "light"}
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              borderRadius: 32,
+              borderWidth: 0.5,
+              borderColor: colors.tabBarBorder,
+              overflow: "hidden",
+            }}
+          />
+        ),
       }}
     >
       <Tabs.Screen
