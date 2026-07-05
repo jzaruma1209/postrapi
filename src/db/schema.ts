@@ -46,6 +46,8 @@ export const pedidos = sqliteTable("pedidos", {
   created_at: text("created_at").notNull(),
   entregado_at: text("entregado_at"),
   synced: integer("synced").notNull().default(0),
+  anuladoAt: text("anulado_at"),
+  motivoAnulacion: text("motivo_anulacion"),
 });
 
 // ─── PEDIDO ITEMS ─────────────────────────────────────────
@@ -70,6 +72,12 @@ export const ventas = sqliteTable("ventas", {
   pedidoId: text("pedido_id"),
   created_at: text("created_at").notNull(),
   synced: integer("synced").notNull().default(0),
+  subtotal: real("subtotal").notNull(),
+  descuentoTipo: text("descuento_tipo"), // porcentaje | fijo
+  descuentoValor: real("descuento_valor").default(0),
+  anulada: integer("anulada").notNull().default(0),
+  anuladaAt: text("anulada_at"),
+  motivoAnulacion: text("motivo_anulacion"),
 });
 
 // ─── VENTA ITEMS ──────────────────────────────────────────

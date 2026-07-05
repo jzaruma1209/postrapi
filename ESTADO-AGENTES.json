@@ -1,0 +1,89 @@
+{
+    "tareas": [
+        {
+            "id": "anulacion-schema",
+            "estado": "listo",
+            "archivos": [
+                "src/db/schema.ts",
+                "src/db/migrations/0002_anulacion_descuento.sql"
+            ],
+            "depende_de": []
+        },
+        {
+            "id": "anulacion-services",
+            "estado": "listo",
+            "archivos": [
+                "src/services/ventas.service.ts",
+                "src/services/pedidos.service.ts"
+            ],
+            "depende_de": [
+                "anulacion-schema"
+            ]
+        },
+        {
+            "id": "anulacion-ui-gestion",
+            "estado": "listo",
+            "archivos": [
+                "src/services/anulacion.service.ts",
+                "app/(tabs)/gestion/anulacion.tsx",
+                "app/(tabs)/gestion/index.tsx"
+            ],
+            "depende_de": [
+                "anulacion-services"
+            ]
+        },
+        {
+            "id": "anulacion-ui-pedidos",
+            "estado": "listo",
+            "archivos": [
+                "app/(tabs)/pedidos/index.tsx"
+            ],
+            "depende_de": [
+                "anulacion-services"
+            ]
+        },
+        {
+            "id": "descuento-cobro",
+            "estado": "listo",
+            "archivos": [
+                "app/(tabs)/ventas/index.tsx",
+                "src/services/ventas.service.ts"
+            ],
+            "depende_de": []
+        },
+        {
+            "id": "fix-anular-solo-no-entregado-pedidos",
+            "estado": "listo",
+            "archivos": [
+                "app/(tabs)/pedidos/index.tsx"
+            ],
+            "depende_de": []
+        },
+        {
+            "id": "fix-navegacion-gestion-anulacion",
+            "estado": "listo",
+            "archivos": [
+                "app/(tabs)/gestion/anulacion.tsx"
+            ],
+            "depende_de": []
+        },
+        {
+            "id": "fix-selector-fecha-solo-otros",
+            "estado": "listo",
+            "archivos": [
+                "app/(tabs)/gestion/anulacion.tsx"
+            ],
+            "depende_de": []
+        },
+        {
+            "id": "fix-selector-fecha-duplicado-otros",
+            "estado": "listo",
+            "archivos": [
+                "app/(tabs)/gestion/anulacion.tsx"
+            ],
+            "depende_de": [
+                "fix-selector-fecha-solo-otros"
+            ]
+        }
+    ]
+}

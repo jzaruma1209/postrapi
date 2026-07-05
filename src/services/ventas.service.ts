@@ -20,6 +20,8 @@ export interface CrearVentaParams {
   items: ItemVenta[];
   metodoPago: MetodoPago;
   pedidoId?: string;
+  descuentoTipo?: 'monto' | 'porcentaje';
+  descuentoValor?: number;
 }
 
 export interface VentaConItems {
@@ -36,10 +38,19 @@ export async function crearVenta(params: CrearVentaParams): Promise<string> {
     throw new Error("No hay una caja abierta. Debes abrir caja antes de cobrar.");
   }
 
-  const { items, metodoPago, pedidoId } = params;
+  const { items, metodoPago, pedidoId, descuentoTipo, descuentoValor } = params;
   const ventaId = generateId();
   const now = nowISO();
-  const total = items.reduce((acc, i) => acc + i.cantidad * i.precioUnitario, 0);
+  const subtotal = items.reduce((acc, i) => acc + i.cantidad * i.precioUnitario, 0);
+
+  let aplicarDescuento = 0;
+  if (descuentoTipo === 'monto' && descuentoValor != null) {
+    aplicarDescuento = Math.min(descuentoValor, subtotal);
+  } else if (descuentoTipo === 'porcentaje' && descuentoValor != null) {
+    aplicarDescuento = Math.min(subtotal * (descuentoValor / 100), subtotal);
+  }
+
+  const total = subtotal - aplicarDescuento;
 
   // Bypassing db.transaction temporalmente para diagnosticar bug de expo-sqlite
   const tx = db;
@@ -50,6 +61,9 @@ export async function crearVenta(params: CrearVentaParams): Promise<string> {
   console.log("==> Insertando venta...");
   await tx.insert(ventas).values({
     id: ventaId,
+    subtotal,
+    descuentoTipo: descuentoTipo ?? null,
+    descuentoValor: descuentoValor ?? 0,
     total,
     metodoPago,
     pedidoId: pedidoId ?? null,
@@ -124,6 +138,74 @@ export async function crearVenta(params: CrearVentaParams): Promise<string> {
   return ventaId;
 }
 
+// ─── ANULAR VENTA ─────────────────────────────────────────
+// Validar PIN desde la UI antes de invocar esta función.
+export async function anularVenta(
+  ventaId: string,
+  motivo: string,
+  devolverStock: boolean
+): Promise<void> {
+  const tx = db; // Usando db directo por bug expo-sqlite
+
+  // 1. Leer venta
+  const vResult = await tx.select().from(ventas).where(eq(ventas.id, ventaId)).limit(1);
+  if (!vResult[0]) {
+    throw new Error("Venta no encontrada.");
+  }
+  const venta = vResult[0];
+  if (venta.anulada === 1) {
+    throw new Error("Esta venta ya fue anulada anteriormente.");
+  }
+
+  const now = nowISO();
+
+  // 2. Devolver stock si se solicita (PRIMERO, antes de marcar como anulada)
+  // Si esto falla, la venta no se marcará como anulada y se podrá reintentar.
+  if (devolverStock) {
+    const items = await tx.select().from(ventaItems).where(eq(ventaItems.ventaId, ventaId));
+    
+    for (const item of items) {
+      const recetaItems = await tx
+        .select()
+        .from(recetas)
+        .where(eq(recetas.productoId, item.productoId));
+
+      for (const recetaItem of recetaItems) {
+        const cantidadDevolver = recetaItem.cantidad * item.cantidad;
+
+        // Registrar movimiento de inventario de devolución
+        await tx.insert(movimientosInventario).values({
+          id: generateId(),
+          ingredienteId: recetaItem.ingredienteId,
+          tipo: "devolucion_anulacion",
+          cantidad: cantidadDevolver, // Positivo (ingresa)
+          motivo: motivo,
+          referenciaId: ventaId,
+          created_at: now,
+          synced: 0,
+        });
+
+        // Actualizar stock actual del ingrediente sumando
+        await tx
+          .update(ingredientes)
+          .set({
+            stockActual: sql`stock_actual + ${cantidadDevolver}`,
+          })
+          .where(eq(ingredientes.id, recetaItem.ingredienteId));
+      }
+    }
+  }
+
+  // 3. Marcar la venta como anulada (SOLO SI EL STOCK SE DEVOLVIÓ SIN ERRORES)
+  await tx.update(ventas)
+    .set({ anulada: 1, anulada_at: now, motivo_anulacion: motivo })
+    .where(eq(ventas.id, ventaId));
+
+  // 4. La caja abierta se calculará dinámicamente usando las ventas no anuladas.
+  // Nota: esto requerirá ajustar getVentasEnRango y otras consultas para filtrar anulada = 1
+  // o hacerlo en la UI.
+}
+
 // ─── OBTENER VENTAS DEL DÍA ───────────────────────────────
 export async function getVentasHoy() {
   const hoy = todayDate();
@@ -133,7 +215,8 @@ export async function getVentasHoy() {
     .where(
       and(
         gte(ventas.created_at, `${hoy}T00:00:00.000Z`),
-        lte(ventas.created_at, `${hoy}T23:59:59.999Z`)
+        lte(ventas.created_at, `${hoy}T23:59:59.999Z`),
+        eq(ventas.anulada, 0)
       )
     )
     .orderBy(desc(ventas.created_at));
@@ -152,7 +235,8 @@ export async function getTotalVentasPorFecha(fecha: string): Promise<number> {
     .where(
       and(
         gte(ventas.created_at, `${fecha}T00:00:00.000Z`),
-        lte(ventas.created_at, `${fecha}T23:59:59.999Z`)
+        lte(ventas.created_at, `${fecha}T23:59:59.999Z`),
+        eq(ventas.anulada, 0)
       )
     );
   return result[0]?.total ?? 0;
@@ -175,7 +259,8 @@ export async function getHistorialVentas(fecha?: string) {
     .where(
       and(
         gte(ventas.created_at, `${dia}T00:00:00.000Z`),
-        lte(ventas.created_at, `${dia}T23:59:59.999Z`)
+        lte(ventas.created_at, `${dia}T23:59:59.999Z`),
+        eq(ventas.anulada, 0)
       )
     )
     .orderBy(desc(ventas.created_at));
@@ -275,7 +360,8 @@ export async function getVentasEnRango(desde: string, hasta: string) {
     .where(
       and(
         gte(ventas.created_at, desde),
-        lte(ventas.created_at, hasta)
+        lte(ventas.created_at, hasta),
+        eq(ventas.anulada, 0)
       )
     )
     .orderBy(desc(ventas.created_at));
@@ -310,7 +396,8 @@ export async function getTopProductosPorFecha(fecha: string, limit = 3) {
     .where(
       and(
         gte(ventas.created_at, `${fecha}T00:00:00.000Z`),
-        lte(ventas.created_at, `${fecha}T23:59:59.999Z`)
+        lte(ventas.created_at, `${fecha}T23:59:59.999Z`),
+        eq(ventas.anulada, 0)
       )
     )
     .groupBy(ventaItems.productoId)

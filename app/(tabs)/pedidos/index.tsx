@@ -14,6 +14,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, Producto, Pedido, configuracion } from "../../../src/db/schema";
 import TicketModal from "../../../src/components/shared/TicketModal";
+import PinModal from "../../../src/components/shared/PinModal";
 import type { DatosTicket } from "../../../src/services/printer.service";
 import {
   getPedidosHoy,
@@ -21,6 +22,7 @@ import {
   crearPedido,
   cambiarEstadoPedido,
   entregarPedido,
+  anularPedido,
   ItemPedido,
 } from "../../../src/services/pedidos.service";
 import type { OrigenPedido, MetodoPago, EstadoPedido } from "../../../src/utils/types";
@@ -46,6 +48,13 @@ export default function PedidosIndex() {
   const [nota, setNota] = useState("");
   const [origen, setOrigen] = useState<OrigenPedido>("en_persona");
   const [procesando, setProcesando] = useState(false);
+
+  // Anulación
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pedidoAAnular, setPedidoAAnular] = useState<{ id: string; estado: string } | null>(null);
+  const [showMotivoModal, setShowMotivoModal] = useState(false);
+  const [motivoAnulacion, setMotivoAnulacion] = useState("");
+  const [procesandoAnulacion, setProcesandoAnulacion] = useState(false);
 
   const fechaHoyStr = useMemo(() => {
     const fecha = new Date();
@@ -289,6 +298,50 @@ export default function PedidosIndex() {
     }
   };
 
+  const handleAnular = (ped: PedidoCompleto) => {
+    setPedidoAAnular({ id: ped.id, estado: ped.estado });
+    setShowPinModal(true);
+  };
+
+  const handlePinSuccess = () => {
+    setShowPinModal(false);
+    setMotivoAnulacion("");
+    setShowMotivoModal(true);
+  };
+
+  const handlePinCancel = () => {
+    setShowPinModal(false);
+    setPedidoAAnular(null);
+  };
+
+  const handleConfirmarAnulacion = async () => {
+    if (!motivoAnulacion.trim()) {
+      Alert.alert("Error", "Debes ingresar un motivo de anulación.");
+      return;
+    }
+    if (!pedidoAAnular) return;
+    setProcesandoAnulacion(true);
+    try {
+      await anularPedido(pedidoAAnular.id, motivoAnulacion.trim());
+      setShowMotivoModal(false);
+      setMotivoAnulacion("");
+      if (pedidoAAnular.estado === "entregado") {
+        Alert.alert(
+          "Pedido anulado",
+          "Se devolvieron ingredientes a Bodega — revisa el stock actualizado."
+        );
+      } else {
+        Alert.alert("Pedido anulado", "El pedido ha sido anulado correctamente.");
+      }
+      setPedidoAAnular(null);
+      cargarPedidos();
+    } catch (err) {
+      Alert.alert("Error", (err as Error).message || "No se pudo anular el pedido.");
+    } finally {
+      setProcesandoAnulacion(false);
+    }
+  };
+
   const pedidosFiltrados = pedidosLista.filter(p => filtro === "todos" || p.estado === filtro);
 
   return (
@@ -352,10 +405,10 @@ export default function PedidosIndex() {
               borderWidth: isDark ? 0.5 : 1,
               borderColor: colors.border,
               borderLeftWidth: 3,
-              borderLeftColor: getColorEstado(ped.estado),
+              borderLeftColor: ped.estado === "anulado" ? "#ef4444" : getColorEstado(ped.estado),
               padding: 16,
               gap: 8,
-              opacity: ped.estado === "entregado" ? 0.6 : 1,
+              opacity: ped.estado === "entregado" || ped.estado === "anulado" ? 0.6 : 1,
             }}
           >
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -365,9 +418,19 @@ export default function PedidosIndex() {
                   {ped.clienteNombre || "Sin nombre"}
                 </Text>
               </View>
-              <View style={{ backgroundColor: getBgEstado(ped.estado), paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 }}>
-                <Text style={{ color: getColorEstado(ped.estado), fontSize: 11, fontWeight: "600", textTransform: "capitalize" }}>
-                  {ped.estado}
+              <View style={{
+                backgroundColor: ped.estado === "anulado" ? "#2a0000" : getBgEstado(ped.estado),
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                borderRadius: 10,
+              }}>
+                <Text style={{
+                  color: ped.estado === "anulado" ? "#ef4444" : getColorEstado(ped.estado),
+                  fontSize: 11,
+                  fontWeight: ped.estado === "anulado" ? "700" : "600",
+                  textTransform: ped.estado === "anulado" ? "uppercase" : "capitalize",
+                }}>
+                  {ped.estado === "anulado" ? "ANULADO" : ped.estado}
                 </Text>
               </View>
             </View>
@@ -388,21 +451,45 @@ export default function PedidosIndex() {
               </Text>
 
               {ped.estado === "pendiente" && (
-                <TouchableOpacity
-                  onPress={() => handlePreparando(ped.id)}
-                  style={{ backgroundColor: "#38bdf8", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
-                >
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Preparando</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => handlePreparando(ped.id)}
+                    style={{ backgroundColor: "#38bdf8", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Preparando</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleAnular(ped)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ef4444", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                  >
+                    <Feather name="x-circle" size={12} color="#fff" />
+                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Anular</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               {ped.estado === "preparando" && (
-                <TouchableOpacity
-                  onPress={() => abrirCobro(ped.id)}
-                  style={{ backgroundColor: "#22c55e", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
-                >
-                  <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Entregar y cobrar</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => abrirCobro(ped.id)}
+                    style={{ backgroundColor: "#22c55e", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Entregar y cobrar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleAnular(ped)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ef4444", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
+                  >
+                    <Feather name="x-circle" size={12} color="#fff" />
+                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Anular</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {ped.estado === "anulado" && (
+                <View style={{ backgroundColor: "#2a0000", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 }}>
+                  <Text style={{ color: "#ef4444", fontSize: 11, fontWeight: "700" }}>ANULADO</Text>
+                </View>
               )}
             </View>
           </View>
@@ -541,6 +628,71 @@ export default function PedidosIndex() {
         datos={ticketDatos}
         onClose={cerrarTicket}
       />
+
+      {/* Modal PIN para Anular */}
+      <PinModal
+        visible={showPinModal}
+        titulo="PIN de Supervisor"
+        onSuccess={handlePinSuccess}
+        onCancel={handlePinCancel}
+      />
+
+      {/* Modal Motivo de Anulación */}
+      <Modal visible={showMotivoModal} transparent animationType="fade" onRequestClose={() => { if (!procesandoAnulacion) { setShowMotivoModal(false); setPedidoAAnular(null); } }}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "center", alignItems: "center", padding: 24 }}>
+          <View style={{ backgroundColor: colors.bgCard, width: "100%", borderRadius: 20, padding: 24, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 8, textAlign: "center" }}>
+              Anular Pedido
+            </Text>
+
+            {pedidoAAnular?.estado === "entregado" && (
+              <Text style={{ color: "#ef4444", fontSize: 13, marginBottom: 16, textAlign: "center", lineHeight: 20 }}>
+                Este pedido ya fue cobrado. Al anularlo se devolverán los ingredientes a Bodega.
+              </Text>
+            )}
+
+            {pedidoAAnular?.estado !== "entregado" && (
+              <Text style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16, textAlign: "center" }}>
+                ¿Confirmas anular este pedido?
+              </Text>
+            )}
+
+            <TextInput
+              value={motivoAnulacion}
+              onChangeText={setMotivoAnulacion}
+              placeholder="Motivo de anulación (requerido)"
+              placeholderTextColor={colors.textMuted}
+              style={{
+                backgroundColor: colors.bgInput,
+                color: colors.text,
+                padding: 12,
+                borderRadius: 10,
+                fontSize: 14,
+                borderWidth: isDark ? 0 : 1,
+                borderColor: colors.border,
+                marginBottom: 20,
+              }}
+            />
+
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <TouchableOpacity
+                onPress={() => { setShowMotivoModal(false); setPedidoAAnular(null); setMotivoAnulacion(""); }}
+                disabled={procesandoAnulacion}
+                style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}
+              >
+                <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleConfirmarAnulacion}
+                disabled={procesandoAnulacion}
+                style={{ flex: 1, backgroundColor: procesandoAnulacion ? "#aaa" : "#ef4444", padding: 14, borderRadius: 10, alignItems: "center" }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>{procesandoAnulacion ? "Anulando..." : "Confirmar"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

@@ -1,9 +1,9 @@
 import { db } from "../db";
-import { pedidos, pedidoItems, productos } from "../db/schema";
+import { pedidos, pedidoItems, productos, ventas } from "../db/schema";
 import { eq, and, ne, desc, gte, lte } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
 import { nowISO, todayDate } from "../utils/dates";
-import { crearVenta, getCajaAbierta } from "./ventas.service";
+import { crearVenta, getCajaAbierta, anularVenta } from "./ventas.service";
 import type { OrigenPedido, EstadoPedido, MetodoPago } from "../utils/types";
 
 export interface ItemPedido {
@@ -141,4 +141,43 @@ export async function getPedidosPendientesCount(): Promise<number> {
     .from(pedidos)
     .where(eq(pedidos.estado, "pendiente"));
   return result.length;
+}
+
+// ─── ANULAR PEDIDO ────────────────────────────────────────
+// Validar PIN desde la UI antes de invocar esta función.
+export async function anularPedido(pedidoId: string, motivo: string): Promise<void> {
+  const tx = db; // Usando db directo por bug expo-sqlite
+
+  // 1. Leer pedido
+  const pResult = await tx.select().from(pedidos).where(eq(pedidos.id, pedidoId)).limit(1);
+  if (!pResult[0]) {
+    throw new Error("Pedido no encontrado.");
+  }
+  const pedido = pResult[0];
+  if (pedido.estado === "anulado") {
+    throw new Error("Este pedido ya está anulado.");
+  }
+
+  const now = nowISO();
+
+  // 2. Si está pendiente o preparando
+  if (pedido.estado === "pendiente" || pedido.estado === "preparando") {
+    await tx.update(pedidos)
+      .set({ estado: "anulado", anulado_at: now, motivo_anulacion: motivo })
+      .where(eq(pedidos.id, pedidoId));
+  } 
+  // 3. Si está entregado (tiene venta asociada)
+  else if (pedido.estado === "entregado") {
+    // Buscar la venta asociada
+    const vResult = await tx.select().from(ventas).where(eq(ventas.pedidoId, pedidoId)).limit(1);
+    if (vResult[0]) {
+      // Llamar a anularVenta internamente (siempre devolvemos stock para pedidos anulados entregados)
+      await anularVenta(vResult[0].id, motivo, true);
+    }
+    
+    // Marcar también el pedido como anulado
+    await tx.update(pedidos)
+      .set({ estado: "anulado", anulado_at: now, motivo_anulacion: motivo })
+      .where(eq(pedidos.id, pedidoId));
+  }
 }

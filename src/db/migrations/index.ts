@@ -178,5 +178,31 @@ export async function runMigrations(): Promise<void> {
     WHERE clave = 'pin_hash' AND (valor IS NULL OR valor = '');
   `);
 
+  // Migración 0002: anulación y descuento en ventas + anulación en pedidos
+  try {
+    await db.run(sql`ALTER TABLE ventas ADD COLUMN subtotal REAL NOT NULL DEFAULT 0;`);
+  } catch { /* columna ya existe */ }
+  try {
+    await db.run(sql`ALTER TABLE ventas ADD COLUMN descuento_tipo TEXT;`);
+  } catch { /* columna ya existe */ }
+  try {
+    await db.run(sql`ALTER TABLE ventas ADD COLUMN descuento_valor REAL DEFAULT 0;`);
+  } catch { /* columna ya existe */ }
+  try {
+    await db.run(sql`ALTER TABLE ventas ADD COLUMN anulada INTEGER NOT NULL DEFAULT 0;`);
+  } catch { /* columna ya existe */ }
+  try {
+    await db.run(sql`ALTER TABLE ventas ADD COLUMN anulada_at TEXT;`);
+  } catch { /* columna ya existe */ }
+  try {
+    await db.run(sql`ALTER TABLE ventas ADD COLUMN motivo_anulacion TEXT;`);
+  } catch { /* columna ya existe */ }
+  try {
+    await db.run(sql`ALTER TABLE pedidos ADD COLUMN anulado_at TEXT;`);
+  } catch { /* columna ya existe */ }
+  try {
+    await db.run(sql`ALTER TABLE pedidos ADD COLUMN motivo_anulacion TEXT;`);
+  } catch { /* columna ya existe */ }
+
   console.log("✅ Migrations ejecutadas correctamente");
 }

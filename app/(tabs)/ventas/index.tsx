@@ -7,6 +7,7 @@ import {
   Modal,
   Alert,
   Platform,
+  TextInput,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { BlurView } from "expo-blur";
@@ -41,6 +42,32 @@ export default function VentasIndex() {
   const [modalCobro, setModalCobro] = useState(false);
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [procesando, setProcesando] = useState(false);
+
+  // Descuento State
+  const [descuentoActivo, setDescuentoActivo] = useState(false);
+  const [descuentoTipo, setDescuentoTipo] = useState<'monto' | 'porcentaje'>('monto');
+  const [descuentoValorStr, setDescuentoValorStr] = useState('');
+
+  const subtotal = useMemo(() => totalCarrito, [totalCarrito]);
+
+  const descuentoCalculado = useMemo(() => {
+    if (!descuentoActivo || !descuentoValorStr) return 0;
+    const valor = parseFloat(descuentoValorStr);
+    if (isNaN(valor) || valor <= 0) return 0;
+    if (descuentoTipo === 'monto') return Math.min(valor, subtotal);
+    return Math.min(subtotal * (valor / 100), subtotal);
+  }, [descuentoActivo, descuentoValorStr, descuentoTipo, subtotal]);
+
+  const totalConDescuento = useMemo(() => subtotal - descuentoCalculado, [subtotal, descuentoCalculado]);
+
+  const errorDescuento = useMemo(() => {
+    if (!descuentoActivo || !descuentoValorStr) return null;
+    const valor = parseFloat(descuentoValorStr);
+    if (isNaN(valor) || valor <= 0) return null;
+    if (descuentoTipo === 'monto' && valor > subtotal) return "El descuento no puede ser mayor al total.";
+    if (descuentoTipo === 'porcentaje' && valor > 100) return "El porcentaje no puede ser mayor a 100%.";
+    return null;
+  }, [descuentoActivo, descuentoValorStr, descuentoTipo, subtotal]);
 
   // PIN Modal State for old caja warning
   const [showPinModal, setShowPinModal] = useState(false);
@@ -96,13 +123,11 @@ export default function VentasIndex() {
           "Debes abrir la caja antes de registrar una venta.",
           [
             { text: "Ir a Caja", onPress: () => {
-              limpiarCarrito();
-              setModalCobro(false);
+              handleCerrarCobro();
               router.push("/ventas/caja");
             }},
             { text: "Cancelar", style: "cancel", onPress: () => {
-              limpiarCarrito();
-              setModalCobro(false);
+              handleCerrarCobro();
             }}
           ]
         );
@@ -116,8 +141,7 @@ export default function VentasIndex() {
           `La caja actual se abrió el día anterior (${cajaAbierta.fecha}). ¿Deseas continuar vendiendo en ella? (Requiere PIN de supervisor)`,
           [
             { text: "No, ir a cerrar caja", onPress: () => {
-              limpiarCarrito();
-              setModalCobro(false);
+              handleCerrarCobro();
               router.push("/ventas/caja");
             }},
             { text: "Sí, continuar con PIN", onPress: () => {
@@ -143,6 +167,8 @@ export default function VentasIndex() {
       const ventaId = await crearVenta({
         items: carrito,
         metodoPago,
+        descuentoTipo: descuentoActivo ? descuentoTipo : undefined,
+        descuentoValor: descuentoActivo && descuentoValorStr ? parseFloat(descuentoValorStr) : undefined,
       });
 
       const conf = await db.select().from(configuracion).where(eq(configuracion.clave, "nombre_negocio")).limit(1);
@@ -157,13 +183,12 @@ export default function VentasIndex() {
           precioUnitario: i.precioUnitario,
           subtotal: i.cantidad * i.precioUnitario
         })),
-        total: totalCarrito,
+        total: descuentoActivo ? totalConDescuento : subtotal,
         metodoPago,
         ventaId
       };
 
-      limpiarCarrito();
-      setModalCobro(false);
+      handleCerrarCobro();
       
       setTicketDatos(ticket);
       setMostrarTicket(true);
@@ -174,6 +199,14 @@ export default function VentasIndex() {
     } finally {
       setProcesando(false);
     }
+  };
+
+  const handleCerrarCobro = () => {
+    limpiarCarrito();
+    setDescuentoActivo(false);
+    setDescuentoValorStr('');
+    setDescuentoTipo('monto');
+    setModalCobro(false);
   };
 
   const cerrarTicket = () => {
@@ -377,7 +410,7 @@ export default function VentasIndex() {
       )}
 
       {/* Modal Cobro */}
-      <Modal visible={modalCobro} transparent animationType="slide" onRequestClose={() => { limpiarCarrito(); setModalCobro(false); }}>
+      <Modal visible={modalCobro} transparent animationType="slide" onRequestClose={handleCerrarCobro}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View
             style={{
@@ -405,9 +438,85 @@ export default function VentasIndex() {
               </ScrollView>
             </View>
 
+            {/* Sección de Descuento */}
+            {!descuentoActivo ? (
+              <TouchableOpacity
+                onPress={() => setDescuentoActivo(true)}
+                style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 16, gap: 6 }}
+              >
+                <Feather name="tag" size={14} color={colors.textMuted} />
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Aplicar descuento</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ marginBottom: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: "600" }}>Descuento</Text>
+                  <TouchableOpacity onPress={() => { setDescuentoActivo(false); setDescuentoValorStr(''); }}>
+                    <Feather name="x" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Selector tipo */}
+                <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => { setDescuentoTipo('monto'); setDescuentoValorStr(''); }}
+                    style={{
+                      flex: 1, padding: 10, borderRadius: 8, borderWidth: 1.5,
+                      borderColor: descuentoTipo === 'monto' ? "#F97316" : colors.border,
+                      backgroundColor: descuentoTipo === 'monto' ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: descuentoTipo === 'monto' ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "600" }}>Monto ($)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { setDescuentoTipo('porcentaje'); setDescuentoValorStr(''); }}
+                    style={{
+                      flex: 1, padding: 10, borderRadius: 8, borderWidth: 1.5,
+                      borderColor: descuentoTipo === 'porcentaje' ? "#F97316" : colors.border,
+                      backgroundColor: descuentoTipo === 'porcentaje' ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: descuentoTipo === 'porcentaje' ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "600" }}>Porcentaje (%)</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Input */}
+                <TextInput
+                  value={descuentoValorStr}
+                  onChangeText={setDescuentoValorStr}
+                  keyboardType="numeric"
+                  placeholder={descuentoTipo === 'monto' ? 'Monto en $' : 'Porcentaje %'}
+                  placeholderTextColor={colors.textMuted}
+                  style={{
+                    backgroundColor: colors.bgInput, color: colors.text, borderRadius: 8, padding: 12,
+                    fontSize: 15, borderWidth: 1, borderColor: errorDescuento ? "#ef4444" : colors.border, marginBottom: 4,
+                  }}
+                />
+
+                {errorDescuento && (
+                  <Text style={{ color: "#ef4444", fontSize: 12, marginBottom: 8 }}>{errorDescuento}</Text>
+                )}
+
+                {/* Desglose */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Subtotal</Text>
+                  <Text style={{ color: colors.text, fontSize: 13 }}>${subtotal.toFixed(2)}</Text>
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Descuento</Text>
+                  <Text style={{ color: "#ef4444", fontSize: 13 }}>-${descuentoCalculado.toFixed(2)}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Total a Pagar */}
             <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16, marginBottom: 24 }}>
               <Text style={{ color: colors.text, fontSize: 16, fontWeight: "500" }}>Total a Pagar</Text>
-              <Text style={{ color: "#F97316", fontSize: 18, fontWeight: "bold" }}>${totalCarrito.toFixed(2)}</Text>
+              <Text style={{ color: "#F97316", fontSize: 18, fontWeight: "bold" }}>
+                ${(descuentoActivo ? totalConDescuento : subtotal).toFixed(2)}
+              </Text>
             </View>
 
             <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Método de Pago</Text>
@@ -444,7 +553,7 @@ export default function VentasIndex() {
 
             <View style={{ flexDirection: "row", gap: 12 }}>
               <TouchableOpacity
-                onPress={() => { limpiarCarrito(); setModalCobro(false); }}
+                onPress={handleCerrarCobro}
                 disabled={procesando}
                 style={{
                   flex: 1,
@@ -460,7 +569,7 @@ export default function VentasIndex() {
               
               <TouchableOpacity
                 onPress={confirmarVenta}
-                disabled={procesando}
+                disabled={procesando || !!errorDescuento}
                 style={{
                   flex: 1,
                   backgroundColor: procesando ? "#aaa" : "#F97316",

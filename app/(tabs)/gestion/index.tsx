@@ -28,6 +28,13 @@ const MENU_ITEMS = [
     route: "/gestion/pin",
   },
   {
+    id: "anulacion",
+    title: "Anulación",
+    description: "Anular ventas y pedidos con PIN de supervisor",
+    icon: "x-circle",
+    route: "/gestion/anulacion",
+  },
+  {
     id: "configuracion",
     title: "Configuración",
     description: "Nombre del negocio y preferencias",
