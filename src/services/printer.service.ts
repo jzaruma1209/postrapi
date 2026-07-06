@@ -26,6 +26,9 @@ export interface DatosTicket {
     precioUnitario: number;
     subtotal: number;
   }[];
+  subtotal: number;
+  descuentoTipo?: string | null;
+  descuentoValor?: number | null;
   total: number;
   metodoPago: string;
   ventaId: string;

@@ -60,6 +60,23 @@ export default function TicketModal({ visible, datos, onClose }: TicketModalProp
               </View>
             ))}
 
+            {(datos.descuentoTipo != null && datos.descuentoValor != null && datos.descuentoValor > 0) ? (
+              <>
+                <View style={styles.itemRow}>
+                  <Text style={styles.itemNombre}>Subtotal</Text>
+                  <Text style={styles.itemSubtotal}>{formatCurrency(datos.subtotal)}</Text>
+                </View>
+                <View style={styles.itemRow}>
+                  <Text style={[styles.itemNombre, { color: "#ef4444" }]}>
+                    Descuento {datos.descuentoTipo === 'porcentaje' ? `(${datos.descuentoValor}%)` : '(monto)'}
+                  </Text>
+                  <Text style={[styles.itemSubtotal, { color: "#ef4444" }]}>
+                    -{formatCurrency(datos.subtotal - datos.total)}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+
             <View style={styles.divider} />
 
             {/* Total */}

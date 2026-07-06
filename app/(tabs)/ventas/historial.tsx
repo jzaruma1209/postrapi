@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { eq, and, gte, lte, desc, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { ventas, ventaItems } from "../../../src/db/schema";
 import { todayDate } from "../../../src/utils/dates";
@@ -14,6 +14,10 @@ type VentaHistorial = {
   metodoPago: string;
   created_at: string;
   itemsCount: number;
+  pedidoId: string | null;
+  descuentoTipo: string | null;
+  descuentoValor: number | null;
+  numero: number;
 };
 
 export default function HistorialVentas() {
@@ -32,6 +36,9 @@ export default function HistorialVentas() {
           metodoPago: ventas.metodoPago,
           created_at: ventas.created_at,
           itemsCount: sql<number>`count(${ventaItems.id})`,
+          pedidoId: ventas.pedidoId,
+          descuentoTipo: ventas.descuentoTipo,
+          descuentoValor: ventas.descuentoValor,
         })
         .from(ventas)
         .leftJoin(ventaItems, eq(ventas.id, ventaItems.ventaId))
@@ -42,9 +49,10 @@ export default function HistorialVentas() {
           )
         )
         .groupBy(ventas.id)
-        .orderBy(desc(ventas.created_at));
+        .orderBy(ventas.created_at);
 
-      setListaVentas(data);
+      const conNumero = data.map((v, idx) => ({ ...v, numero: idx + 1 }));
+      setListaVentas(conNumero.reverse());
     } catch (error) {
       console.error("Error al cargar historial:", error);
     }
@@ -138,7 +146,7 @@ export default function HistorialVentas() {
           >
             <View>
               <Text style={{ fontSize: 14, color: colors.text, fontWeight: "500", marginBottom: 4 }}>
-                {formatHora(v.created_at)}
+                {formatHora(v.created_at)}  <Text style={{ fontSize: 11, color: colors.textMuted }}>Venta #{v.numero}</Text>
               </Text>
               <Text style={{ fontSize: 11, color: colors.textMuted }}>
                 {v.itemsCount} {v.itemsCount === 1 ? "item" : "items"}
@@ -146,20 +154,39 @@ export default function HistorialVentas() {
             </View>
 
             <View style={{ alignItems: "flex-end", gap: 4 }}>
-              <Text style={{ fontSize: 16, color: "#F97316", fontWeight: "bold" }}>
-                ${v.total.toFixed(2)}
-              </Text>
-              <View
-                style={{
-                  backgroundColor: v.metodoPago === "efectivo" ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#001a2a" : "#e6f4ff"),
-                  paddingHorizontal: 8,
-                  paddingVertical: 2,
-                  borderRadius: 10,
-                }}
-              >
-                <Text style={{ fontSize: 10, fontWeight: "500", color: v.metodoPago === "efectivo" ? "#22c55e" : "#38bdf8" }}>
-                  {v.metodoPago === "efectivo" ? "Efectivo" : "Transferencia"}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={{ fontSize: 16, color: "#F97316", fontWeight: "bold" }}>
+                  ${v.total.toFixed(2)}
                 </Text>
+                {v.descuentoTipo != null && v.descuentoValor != null && v.descuentoValor > 0 && (
+                  <Feather name="tag" size={14} color="#ef4444" />
+                )}
+              </View>
+              <View style={{ flexDirection: "row", gap: 4 }}>
+                <View
+                  style={{
+                    backgroundColor: v.metodoPago === "efectivo" ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#001a2a" : "#e6f4ff"),
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: "500", color: v.metodoPago === "efectivo" ? "#22c55e" : "#38bdf8" }}>
+                    {v.metodoPago === "efectivo" ? "Efectivo" : "Transferencia"}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    backgroundColor: isDark ? "#1a1a2e" : "#f0f0f5",
+                    paddingHorizontal: 8,
+                    paddingVertical: 2,
+                    borderRadius: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, fontWeight: "500", color: colors.textMuted }}>
+                    {v.pedidoId ? "Pedido" : "Directa"}
+                  </Text>
+                </View>
               </View>
             </View>
           </TouchableOpacity>

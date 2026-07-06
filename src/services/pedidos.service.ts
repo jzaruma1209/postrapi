@@ -71,7 +71,9 @@ export async function cambiarEstadoPedido(
 
 export async function entregarPedido(
   pedidoId: string,
-  metodoPago: MetodoPago
+  metodoPago: MetodoPago,
+  descuentoTipo?: 'monto' | 'porcentaje',
+  descuentoValor?: number
 ): Promise<string> {
   // Obtener items del pedido
   const items = await db
@@ -101,6 +103,8 @@ export async function entregarPedido(
     items: itemsConPrecio,
     metodoPago,
     pedidoId,
+    descuentoTipo,
+    descuentoValor,
   });
 
   return ventaId;
@@ -163,7 +167,7 @@ export async function anularPedido(pedidoId: string, motivo: string): Promise<vo
   // 2. Si está pendiente o preparando
   if (pedido.estado === "pendiente" || pedido.estado === "preparando") {
     await tx.update(pedidos)
-      .set({ estado: "anulado", anulado_at: now, motivo_anulacion: motivo })
+      .set({ estado: "anulado", anuladoAt: now, motivoAnulacion: motivo })
       .where(eq(pedidos.id, pedidoId));
   } 
   // 3. Si está entregado (tiene venta asociada)
@@ -177,7 +181,7 @@ export async function anularPedido(pedidoId: string, motivo: string): Promise<vo
     
     // Marcar también el pedido como anulado
     await tx.update(pedidos)
-      .set({ estado: "anulado", anulado_at: now, motivo_anulacion: motivo })
+      .set({ estado: "anulado", anuladoAt: now, motivoAnulacion: motivo })
       .where(eq(pedidos.id, pedidoId));
   }
 }

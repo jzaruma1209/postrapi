@@ -2,9 +2,9 @@ import { useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, ScrollView, Modal } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "../../../src/db";
-import { productos } from "../../../src/db/schema";
+import { productos, ventas } from "../../../src/db/schema";
 import { getVentaConItems, VentaConItems } from "../../../src/services/ventas.service";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
@@ -25,6 +25,7 @@ export default function DetalleVenta() {
 
   const [detalle, setDetalle] = useState<VentaDetalleState | null>(null);
   const [modalTicket, setModalTicket] = useState(false);
+  const [numeroVenta, setNumeroVenta] = useState<number | null>(null);
 
   const cargarDetalle = async () => {
     if (!id) return;
@@ -45,6 +46,21 @@ export default function DetalleVenta() {
         );
         
         setDetalle({ ...data, itemsConNombre });
+
+        // Compute sequential number for the day
+        const ventaDate = data.venta.created_at.split("T")[0];
+        const ventasDelDia = await db
+          .select({ id: ventas.id, created_at: ventas.created_at })
+          .from(ventas)
+          .where(
+            and(
+              gte(ventas.created_at, `${ventaDate}T00:00:00.000Z`),
+              lte(ventas.created_at, `${ventaDate}T23:59:59.999Z`)
+            )
+          )
+          .orderBy(ventas.created_at);
+        const idx = ventasDelDia.findIndex((v) => v.id === id);
+        setNumeroVenta(idx >= 0 ? idx + 1 : null);
       }
     } catch (error) {
       console.error("Error al cargar detalle de venta:", error);
@@ -104,19 +120,40 @@ export default function DetalleVenta() {
             <Text style={{ color: colors.text, fontSize: 13 }}>{formatFechaHora(detalle.venta.created_at)}</Text>
           </View>
 
+          {numeroVenta != null && (
+            <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 12 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 13 }}>N° de Venta</Text>
+              <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>#{numeroVenta}</Text>
+            </View>
+          )}
+
           <View style={{ flexDirection: "row", justifyContent: "space-between", borderBottomWidth: 0.5, borderBottomColor: colors.border, paddingBottom: 12 }}>
             <Text style={{ color: colors.textMuted, fontSize: 13 }}>Método de Pago</Text>
-            <View
-              style={{
-                backgroundColor: detalle.venta.metodoPago === "efectivo" ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#001a2a" : "#e6f4ff"),
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-                borderRadius: 10,
-              }}
-            >
-              <Text style={{ fontSize: 11, fontWeight: "500", color: detalle.venta.metodoPago === "efectivo" ? "#22c55e" : "#38bdf8", textTransform: "capitalize" }}>
-                {detalle.venta.metodoPago}
-              </Text>
+            <View style={{ flexDirection: "row", gap: 4 }}>
+              <View
+                style={{
+                  backgroundColor: detalle.venta.metodoPago === "efectivo" ? (isDark ? "#001a10" : "#e6f7e6") : (isDark ? "#001a2a" : "#e6f4ff"),
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 10,
+                }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: "500", color: detalle.venta.metodoPago === "efectivo" ? "#22c55e" : "#38bdf8", textTransform: "capitalize" }}>
+                  {detalle.venta.metodoPago}
+                </Text>
+              </View>
+              <View
+                style={{
+                  backgroundColor: isDark ? "#1a1a2e" : "#f0f0f5",
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  borderRadius: 10,
+                }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: "500", color: colors.textMuted }}>
+                  {detalle.venta.pedidoId ? "Pedido" : "Directa"}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -138,6 +175,23 @@ export default function DetalleVenta() {
               <Text style={{ color: colors.text, fontSize: 13, fontWeight: "500" }}>${it.subtotal.toFixed(2)}</Text>
             </View>
           ))}
+
+          {detalle.venta.descuentoTipo != null && detalle.venta.descuentoValor != null && detalle.venta.descuentoValor > 0 && (
+            <>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", paddingTop: 8 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Subtotal</Text>
+                <Text style={{ color: colors.text, fontSize: 13 }}>${detalle.venta.subtotal.toFixed(2)}</Text>
+              </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                <Text style={{ color: "#ef4444", fontSize: 13 }}>
+                  Descuento {detalle.venta.descuentoTipo === 'porcentaje' ? `(${detalle.venta.descuentoValor}%)` : '(monto)'}
+                </Text>
+                <Text style={{ color: "#ef4444", fontSize: 13 }}>
+                  -${(detalle.venta.subtotal - detalle.venta.total).toFixed(2)}
+                </Text>
+              </View>
+            </>
+          )}
 
           <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 0.5, borderTopColor: colors.border, paddingTop: 16, marginTop: 8 }}>
             <Text style={{ color: colors.text, fontSize: 16, fontWeight: "500" }}>Total</Text>
@@ -175,6 +229,23 @@ export default function DetalleVenta() {
                 <Text style={{ fontSize: 12, color: "#000" }}>${it.subtotal.toFixed(2)}</Text>
               </View>
             ))}
+
+            {detalle.venta.descuentoTipo != null && detalle.venta.descuentoValor != null && detalle.venta.descuentoValor > 0 && (
+              <>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: "#000" }}>Subtotal</Text>
+                  <Text style={{ fontSize: 12, color: "#000" }}>${detalle.venta.subtotal.toFixed(2)}</Text>
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ fontSize: 12, color: "#ef4444" }}>
+                    Descuento {detalle.venta.descuentoTipo === 'porcentaje' ? `(${detalle.venta.descuentoValor}%)` : '(monto)'}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#ef4444" }}>
+                    -${(detalle.venta.subtotal - detalle.venta.total).toFixed(2)}
+                  </Text>
+                </View>
+              </>
+            )}
 
             <View style={{ borderBottomWidth: 1, borderBottomColor: "#ccc", borderStyle: "dashed", marginTop: 12, marginBottom: 12 }} />
 

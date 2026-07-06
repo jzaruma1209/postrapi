@@ -143,7 +143,7 @@ export default function BodegaIndex() {
   // ─── HANDLERS DE FORMULARIOS ───
   const solicitarAjuste = (ing: Ingrediente) => {
     setIngAjuste(ing);
-    setStockReal(ing.stockActual.toString());
+    setStockReal(formatearCantidad(ing.stockActual));
     setMotivoAjuste("");
     setModalAjuste(true);
   };
@@ -195,7 +195,7 @@ export default function BodegaIndex() {
     setIngEditId(ing.id);
     setIngNombre(ing.nombre);
     setIngUnidad(ing.unidad);
-    setIngMinimo(ing.stockMinimo.toString());
+    setIngMinimo(formatearCantidad(ing.stockMinimo));
     setModalIng(true);
   };
 
@@ -334,7 +334,7 @@ export default function BodegaIndex() {
                   <View>
                     <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600", marginBottom: 4 }}>{ing?.nombre || "Desconocido"}</Text>
                     <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                      +{comp.cantidad} {ing?.unidad} · {new Date(comp.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      +{formatearCantidad(comp.cantidad)} {ing?.unidad} · {new Date(comp.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                   </View>
                   <Text style={{ color: "#22c55e", fontSize: 16, fontWeight: "bold" }}>
@@ -378,7 +378,7 @@ export default function BodegaIndex() {
                   <Text style={{ color: colors.textMuted, fontSize: 12 }}>Unidad: {ing.unidad}</Text>
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
-                  <Text style={{ color: colors.textLight, fontSize: 12 }}>Min: {ing.stockMinimo}</Text>
+                  <Text style={{ color: colors.textLight, fontSize: 12 }}>Min: {formatearCantidad(ing.stockMinimo)}</Text>
                   <Feather name="chevron-right" size={16} color={colors.tabInactive} style={{ marginTop: 4 }} />
                 </View>
               </TouchableOpacity>

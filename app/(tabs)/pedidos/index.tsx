@@ -6,6 +6,7 @@ import {
   ScrollView,
   Modal,
   TextInput,
+  Platform,
   Alert,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -49,6 +50,15 @@ export default function PedidosIndex() {
   const [origen, setOrigen] = useState<OrigenPedido>("en_persona");
   const [procesando, setProcesando] = useState(false);
 
+  // Items for cobro modal
+  const [itemsCobroInfo, setItemsCobroInfo] = useState<{ nombre: string; cantidad: number; precioUnitario: number; subtotal: number }[]>([]);
+  const [subtotalCobro, setSubtotalCobro] = useState(0);
+
+  // Descuento State
+  const [descuentoActivo, setDescuentoActivo] = useState(false);
+  const [descuentoTipo, setDescuentoTipo] = useState<'monto' | 'porcentaje'>('monto');
+  const [descuentoValorStr, setDescuentoValorStr] = useState('');
+
   // Anulación
   const [showPinModal, setShowPinModal] = useState(false);
   const [pedidoAAnular, setPedidoAAnular] = useState<{ id: string; estado: string } | null>(null);
@@ -62,6 +72,25 @@ export default function PedidosIndex() {
     const formateada = fecha.toLocaleDateString('es-ES', opciones);
     return formateada.charAt(0).toUpperCase() + formateada.slice(1);
   }, []);
+
+  const descuentoCalculado = useMemo(() => {
+    if (!descuentoActivo || !descuentoValorStr) return 0;
+    const valor = parseFloat(descuentoValorStr);
+    if (isNaN(valor) || valor <= 0) return 0;
+    if (descuentoTipo === 'monto') return Math.min(valor, subtotalCobro);
+    return Math.min(subtotalCobro * (valor / 100), subtotalCobro);
+  }, [descuentoActivo, descuentoValorStr, descuentoTipo, subtotalCobro]);
+
+  const totalConDescuento = useMemo(() => subtotalCobro - descuentoCalculado, [subtotalCobro, descuentoCalculado]);
+
+  const errorDescuento = useMemo(() => {
+    if (!descuentoActivo || !descuentoValorStr) return null;
+    const valor = parseFloat(descuentoValorStr);
+    if (isNaN(valor) || valor <= 0) return null;
+    if (descuentoTipo === 'monto' && valor > subtotalCobro) return "El descuento no puede ser mayor al total.";
+    if (descuentoTipo === 'porcentaje' && valor > 100) return "El porcentaje no puede ser mayor a 100%.";
+    return null;
+  }, [descuentoActivo, descuentoValorStr, descuentoTipo, subtotalCobro]);
 
   // Cobro Modal
   const [modalCobro, setModalCobro] = useState(false);
@@ -158,46 +187,57 @@ export default function PedidosIndex() {
     }
   };
 
-  const abrirCobro = (id: string) => {
+  const abrirCobro = async (id: string) => {
     setPedidoACobrar(id);
     setMetodoPago("efectivo");
+    setDescuentoActivo(false);
+    setDescuentoValorStr('');
+    setDescuentoTipo('monto');
+    const items = await getPedidoItems(id);
+    const itemsConInfo = await Promise.all(
+      items.map(async (item) => {
+        const prod = await db.select().from(productos).where(eq(productos.id, item.productoId)).limit(1);
+        return {
+          nombre: prod[0]?.nombre || "Producto",
+          cantidad: item.cantidad,
+          precioUnitario: prod[0]?.precio || 0,
+          subtotal: item.cantidad * (prod[0]?.precio || 0)
+        };
+      })
+    );
+    const total = itemsConInfo.reduce((acc, curr) => acc + curr.subtotal, 0);
+    setItemsCobroInfo(itemsConInfo);
+    setSubtotalCobro(total);
     setModalCobro(true);
+  };
+
+  const handleCerrarCobro = () => {
+    setModalCobro(false);
+    setPedidoACobrar(null);
+    setDescuentoActivo(false);
+    setDescuentoValorStr('');
+    setDescuentoTipo('monto');
   };
 
   const confirmarCobro = async () => {
     if (!pedidoACobrar) return;
     setProcesando(true);
     try {
-      const ventaId = await entregarPedido(pedidoACobrar, metodoPago);
+      const ventaId = await entregarPedido(pedidoACobrar, metodoPago, descuentoActivo ? descuentoTipo : undefined, descuentoActivo && descuentoValorStr ? parseFloat(descuentoValorStr) : undefined);
       
       const conf = await db.select().from(configuracion).where(eq(configuracion.clave, "nombre_negocio")).limit(1);
       const negocio = conf[0]?.valor || "Postrapi";
       
-      const items = await getPedidoItems(pedidoACobrar);
-      const itemsConInfo = await Promise.all(
-        items.map(async (item) => {
-          const prod = await db.select().from(productos).where(eq(productos.id, item.productoId)).limit(1);
-          return {
-            nombre: prod[0]?.nombre || "Producto",
-            cantidad: item.cantidad,
-            precioUnitario: prod[0]?.precio || 0,
-            subtotal: item.cantidad * (prod[0]?.precio || 0)
-          };
-        })
-      );
-      const total = itemsConInfo.reduce((acc, curr) => acc + curr.subtotal, 0);
-
       const ticket: DatosTicket = {
         negocio,
         fecha: new Date().toISOString(),
-        items: itemsConInfo,
-        total,
+        items: itemsCobroInfo,
+        total: descuentoActivo ? totalConDescuento : subtotalCobro,
         metodoPago,
         ventaId
       };
 
-      setModalCobro(false);
-      setPedidoACobrar(null);
+      handleCerrarCobro();
       cargarPedidos();
       
       setTicketDatos(ticket);
@@ -211,8 +251,7 @@ export default function PedidosIndex() {
           "Debes abrir la caja antes de cobrar el pedido.",
           [
             { text: "Ir a Caja", onPress: () => {
-              setModalCobro(false);
-              setPedidoACobrar(null);
+              handleCerrarCobro();
               router.push("/ventas/caja");
             }},
             { text: "Cancelar", style: "cancel" }
@@ -373,7 +412,7 @@ export default function PedidosIndex() {
       {/* Chips de filtro */}
       <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {(["todos", "pendiente", "preparando", "entregado"] as const).map(f => (
+          {(["pendiente", "preparando", "entregado", "todos"] as const).map(f => (
             <TouchableOpacity
               key={f}
               onPress={() => setFiltro(f)}
@@ -456,7 +495,7 @@ export default function PedidosIndex() {
                     onPress={() => handlePreparando(ped.id)}
                     style={{ backgroundColor: "#38bdf8", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}
                   >
-                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Preparando</Text>
+                    <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>Preparado</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => handleAnular(ped)}
@@ -506,11 +545,11 @@ export default function PedidosIndex() {
       {/* Modal Nuevo Pedido */}
       <Modal visible={modalNuevo} transparent animationType="slide" onRequestClose={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }}>
         <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, height: "85%" }}>
+          <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
             <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
             <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginBottom: 16 }}>Nuevo Pedido</Text>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={{ gap: 12, marginBottom: 16 }}>
                 <TextInput
                   value={clienteNombre}
@@ -572,55 +611,197 @@ export default function PedidosIndex() {
                   );
                 })}
               </View>
-            </ScrollView>
 
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-              <TouchableOpacity onPress={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }} disabled={procesando} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
-                <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmarCrearPedido} disabled={procesando} style={{ flex: 1, backgroundColor: procesando ? "#aaa" : "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
-                <Text style={{ color: "#fff", fontWeight: "600" }}>{procesando ? "Creando..." : "Crear Pedido"}</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 16, marginBottom: 16 }}>
+                <TouchableOpacity onPress={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }} disabled={procesando} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
+                  <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={confirmarCrearPedido} disabled={procesando} style={{ flex: 1, backgroundColor: procesando ? "#aaa" : "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>{procesando ? "Creando..." : "Crear Pedido"}</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
 
       {/* Modal Cobro */}
-      <Modal visible={modalCobro} transparent animationType="fade" onRequestClose={() => setModalCobro(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "center", alignItems: "center", padding: 24 }}>
-          <View style={{ backgroundColor: colors.bgCard, width: "100%", borderRadius: 20, padding: 24, borderWidth: isDark ? 0 : 1, borderColor: colors.border }}>
+      <Modal visible={modalCobro} transparent animationType="slide" onRequestClose={handleCerrarCobro}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+          <View
+            style={{
+              backgroundColor: colors.bgCard,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              padding: 24,
+            }}
+          >
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            {/* Handle */}
+            <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
+
             <Text style={{ fontSize: 16, fontWeight: "600", color: colors.text, marginBottom: 16, textAlign: "center" }}>
               Entregar y Cobrar
             </Text>
+
+            <View style={{ maxHeight: 200, marginBottom: 16 }}>
+              <ScrollView>
+                {itemsCobroInfo.map((item, idx) => (
+                  <View key={idx} style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
+                    <Text style={{ color: colors.textLight, fontSize: 13 }}>{item.cantidad}x {item.nombre}</Text>
+                    <Text style={{ color: colors.text, fontSize: 13 }}>${item.subtotal.toFixed(2)}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Sección de Descuento */}
+            {!descuentoActivo ? (
+              <TouchableOpacity
+                onPress={() => setDescuentoActivo(true)}
+                style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 16, gap: 6 }}
+              >
+                <Feather name="tag" size={14} color={colors.textMuted} />
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Aplicar descuento</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ marginBottom: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <Text style={{ color: colors.text, fontSize: 13, fontWeight: "600" }}>Descuento</Text>
+                  <TouchableOpacity onPress={() => { setDescuentoActivo(false); setDescuentoValorStr(''); }}>
+                    <Feather name="x" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Selector tipo */}
+                <View style={{ flexDirection: "row", gap: 12, marginBottom: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => { setDescuentoTipo('monto'); setDescuentoValorStr(''); }}
+                    style={{
+                      flex: 1, padding: 10, borderRadius: 8, borderWidth: 1.5,
+                      borderColor: descuentoTipo === 'monto' ? "#F97316" : colors.border,
+                      backgroundColor: descuentoTipo === 'monto' ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: descuentoTipo === 'monto' ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "600" }}>Monto ($)</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { setDescuentoTipo('porcentaje'); setDescuentoValorStr(''); }}
+                    style={{
+                      flex: 1, padding: 10, borderRadius: 8, borderWidth: 1.5,
+                      borderColor: descuentoTipo === 'porcentaje' ? "#F97316" : colors.border,
+                      backgroundColor: descuentoTipo === 'porcentaje' ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ color: descuentoTipo === 'porcentaje' ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "600" }}>Porcentaje (%)</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Input */}
+                <TextInput
+                  value={descuentoValorStr}
+                  onChangeText={setDescuentoValorStr}
+                  keyboardType="numeric"
+                  placeholder={descuentoTipo === 'monto' ? 'Monto en $' : 'Porcentaje %'}
+                  placeholderTextColor={colors.textMuted}
+                  style={{
+                    backgroundColor: colors.bgInput, color: colors.text, borderRadius: 8, padding: 12,
+                    fontSize: 15, borderWidth: 1, borderColor: errorDescuento ? "#ef4444" : colors.border, marginBottom: 4,
+                  }}
+                />
+
+                {errorDescuento && (
+                  <Text style={{ color: "#ef4444", fontSize: 12, marginBottom: 8 }}>{errorDescuento}</Text>
+                )}
+
+                {/* Desglose */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Subtotal</Text>
+                  <Text style={{ color: colors.text, fontSize: 13 }}>${subtotalCobro.toFixed(2)}</Text>
+                </View>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                  <Text style={{ color: colors.textMuted, fontSize: 13 }}>Descuento</Text>
+                  <Text style={{ color: "#ef4444", fontSize: 13 }}>-${descuentoCalculado.toFixed(2)}</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Total a Pagar */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16, marginBottom: 24 }}>
+              <Text style={{ color: colors.text, fontSize: 16, fontWeight: "500" }}>Total a Pagar</Text>
+              <Text style={{ color: "#F97316", fontSize: 18, fontWeight: "bold" }}>
+                ${(descuentoActivo ? totalConDescuento : subtotalCobro).toFixed(2)}
+              </Text>
+            </View>
 
             <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Método de Pago</Text>
             <View style={{ flexDirection: "row", gap: 12, marginBottom: 24 }}>
               <TouchableOpacity
                 onPress={() => setMetodoPago("efectivo")}
-                style={{ flex: 1, padding: 12, borderRadius: 10, borderWidth: 1.5, borderColor: metodoPago === "efectivo" ? "#F97316" : colors.border, backgroundColor: metodoPago === "efectivo" ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput, alignItems: "center" }}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderRadius: 10,
+                  borderWidth: 1.5,
+                  borderColor: metodoPago === "efectivo" ? "#F97316" : colors.border,
+                  backgroundColor: metodoPago === "efectivo" ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput,
+                  alignItems: "center",
+                }}
               >
                 <Text style={{ color: metodoPago === "efectivo" ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "600" }}>Efectivo</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setMetodoPago("transferencia")}
-                style={{ flex: 1, padding: 12, borderRadius: 10, borderWidth: 1.5, borderColor: metodoPago === "transferencia" ? "#F97316" : colors.border, backgroundColor: metodoPago === "transferencia" ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput, alignItems: "center" }}
+                style={{
+                  flex: 1,
+                  padding: 12,
+                  borderRadius: 10,
+                  borderWidth: 1.5,
+                  borderColor: metodoPago === "transferencia" ? "#F97316" : colors.border,
+                  backgroundColor: metodoPago === "transferencia" ? (isDark ? "#2a1a00" : "#fff4e6") : colors.bgInput,
+                  alignItems: "center",
+                }}
               >
                 <Text style={{ color: metodoPago === "transferencia" ? "#F97316" : colors.textMuted, fontSize: 13, fontWeight: "600" }}>Transferencia</Text>
               </TouchableOpacity>
             </View>
 
             <View style={{ flexDirection: "row", gap: 12 }}>
-              <TouchableOpacity onPress={() => setModalCobro(false)} disabled={procesando} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
+              <TouchableOpacity
+                onPress={handleCerrarCobro}
+                disabled={procesando}
+                style={{
+                  flex: 1,
+                  padding: 14,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  alignItems: "center",
+                }}
+              >
                 <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={confirmarCobro} disabled={procesando} style={{ flex: 1, backgroundColor: procesando ? "#aaa" : "#22c55e", padding: 14, borderRadius: 10, alignItems: "center" }}>
+              
+              <TouchableOpacity
+                onPress={confirmarCobro}
+                disabled={procesando || !!errorDescuento}
+                style={{
+                  flex: 1,
+                  backgroundColor: procesando ? "#aaa" : "#22c55e",
+                  padding: 14,
+                  borderRadius: 10,
+                  alignItems: "center",
+                }}
+              >
                 <Text style={{ color: "#fff", fontWeight: "600" }}>{procesando ? "Procesando..." : "Confirmar"}</Text>
               </TouchableOpacity>
             </View>
+            </ScrollView>
           </View>
-        </View>
-      </Modal>
+          </View>
+        </Modal>
 
       {/* Modal Ticket */}
       <TicketModal 

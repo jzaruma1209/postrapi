@@ -198,7 +198,7 @@ export async function anularVenta(
 
   // 3. Marcar la venta como anulada (SOLO SI EL STOCK SE DEVOLVIÓ SIN ERRORES)
   await tx.update(ventas)
-    .set({ anulada: 1, anulada_at: now, motivo_anulacion: motivo })
+    .set({ anulada: 1, anuladaAt: now, motivoAnulacion: motivo })
     .where(eq(ventas.id, ventaId));
 
   // 4. La caja abierta se calculará dinámicamente usando las ventas no anuladas.

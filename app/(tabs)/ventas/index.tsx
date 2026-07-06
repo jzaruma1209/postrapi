@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
   TextInput,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { BlurView } from "expo-blur";
@@ -183,6 +184,9 @@ export default function VentasIndex() {
           precioUnitario: i.precioUnitario,
           subtotal: i.cantidad * i.precioUnitario
         })),
+        subtotal,
+        descuentoTipo: descuentoActivo ? descuentoTipo : null,
+        descuentoValor: descuentoActivo && descuentoValorStr ? parseFloat(descuentoValorStr) : null,
         total: descuentoActivo ? totalConDescuento : subtotal,
         metodoPago,
         ventaId
@@ -411,7 +415,7 @@ export default function VentasIndex() {
 
       {/* Modal Cobro */}
       <Modal visible={modalCobro} transparent animationType="slide" onRequestClose={handleCerrarCobro}>
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
           <View
             style={{
               backgroundColor: colors.bgCard,
@@ -420,6 +424,7 @@ export default function VentasIndex() {
               padding: 24,
             }}
           >
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
             {/* Handle */}
             <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
 
@@ -581,9 +586,10 @@ export default function VentasIndex() {
                 <Text style={{ color: "#fff", fontWeight: "600" }}>{procesando ? "Procesando..." : "Confirmar Venta"}</Text>
               </TouchableOpacity>
             </View>
+            </ScrollView>
           </View>
-        </View>
-      </Modal>
+          </KeyboardAvoidingView>
+        </Modal>
 
       {/* Modal Ticket */}
       <TicketModal 
