@@ -167,7 +167,7 @@ export async function anularPedido(pedidoId: string, motivo: string): Promise<vo
   // 2. Si está pendiente o preparando
   if (pedido.estado === "pendiente" || pedido.estado === "preparando") {
     await tx.update(pedidos)
-      .set({ estado: "anulado", anuladoAt: now, motivoAnulacion: motivo })
+      .set({ estado: "anulado", anuladoAt: now, motivoAnulacion: motivo, synced: 0 })
       .where(eq(pedidos.id, pedidoId));
   } 
   // 3. Si está entregado (tiene venta asociada)
@@ -181,7 +181,7 @@ export async function anularPedido(pedidoId: string, motivo: string): Promise<vo
     
     // Marcar también el pedido como anulado
     await tx.update(pedidos)
-      .set({ estado: "anulado", anuladoAt: now, motivoAnulacion: motivo })
+      .set({ estado: "anulado", anuladoAt: now, motivoAnulacion: motivo, synced: 0 })
       .where(eq(pedidos.id, pedidoId));
   }
 }
