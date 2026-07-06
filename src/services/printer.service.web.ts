@@ -5,6 +5,7 @@
 export interface DatosTicket {
   negocio: string;
   fecha: string;
+  numeroVenta?: number;
   items: {
     nombre: string;
     cantidad: number;

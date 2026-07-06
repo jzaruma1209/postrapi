@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -13,12 +13,13 @@ import {
 import { useRouter, useFocusEffect } from "expo-router";
 import { BlurView } from "expo-blur";
 import { Feather } from "@expo/vector-icons";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "../../../src/db";
-import { productos, Producto } from "../../../src/db/schema";
+import { productos, Producto, ventas } from "../../../src/db/schema";
 import { useVentasStore } from "../../../src/stores/useVentasStore";
 import { crearVenta, getCajaAbierta } from "../../../src/services/ventas.service";
 import type { MetodoPago } from "../../../src/utils/types";
+import { parseNumber } from "../../../src/utils/numbers";
 import { configuracion } from "../../../src/db/schema";
 import TicketModal from "../../../src/components/shared/TicketModal";
 import type { DatosTicket } from "../../../src/services/printer.service";
@@ -44,6 +45,9 @@ export default function VentasIndex() {
   const [metodoPago, setMetodoPago] = useState<MetodoPago>("efectivo");
   const [procesando, setProcesando] = useState(false);
 
+  const [filtroCategoria, setFiltroCategoria] = useState<string>("todos");
+  const scrollRef = useRef<ScrollView>(null);
+
   // Descuento State
   const [descuentoActivo, setDescuentoActivo] = useState(false);
   const [descuentoTipo, setDescuentoTipo] = useState<'monto' | 'porcentaje'>('monto');
@@ -53,7 +57,7 @@ export default function VentasIndex() {
 
   const descuentoCalculado = useMemo(() => {
     if (!descuentoActivo || !descuentoValorStr) return 0;
-    const valor = parseFloat(descuentoValorStr);
+    const valor = parseNumber(descuentoValorStr);
     if (isNaN(valor) || valor <= 0) return 0;
     if (descuentoTipo === 'monto') return Math.min(valor, subtotal);
     return Math.min(subtotal * (valor / 100), subtotal);
@@ -63,7 +67,7 @@ export default function VentasIndex() {
 
   const errorDescuento = useMemo(() => {
     if (!descuentoActivo || !descuentoValorStr) return null;
-    const valor = parseFloat(descuentoValorStr);
+    const valor = parseNumber(descuentoValorStr);
     if (isNaN(valor) || valor <= 0) return null;
     if (descuentoTipo === 'monto' && valor > subtotal) return "El descuento no puede ser mayor al total.";
     if (descuentoTipo === 'porcentaje' && valor > 100) return "El porcentaje no puede ser mayor a 100%.";
@@ -96,8 +100,23 @@ export default function VentasIndex() {
   useFocusEffect(
     useCallback(() => {
       cargarProductos();
+      setFiltroCategoria("todos");
+      limpiarCarrito();
+      setModalCobro(false);
+      setDescuentoActivo(false);
+      setDescuentoValorStr('');
+      setDescuentoTipo('monto');
+      setShowPinModal(false);
+      setMostrarTicket(false);
+      setTicketDatos(null);
+      scrollRef.current?.scrollTo({ y: 0, animated: false });
     }, [])
   );
+
+  const productosFiltrados = useMemo(() => {
+    if (filtroCategoria === "todos") return listaProductos;
+    return listaProductos.filter((p) => p.categoria === filtroCategoria);
+  }, [listaProductos, filtroCategoria]);
 
   const getCantidadEnCarrito = (productoId: string) => {
     const item = carrito.find((i) => i.productoId === productoId);
@@ -169,8 +188,23 @@ export default function VentasIndex() {
         items: carrito,
         metodoPago,
         descuentoTipo: descuentoActivo ? descuentoTipo : undefined,
-        descuentoValor: descuentoActivo && descuentoValorStr ? parseFloat(descuentoValorStr) : undefined,
+        descuentoValor: descuentoActivo && descuentoValorStr ? parseNumber(descuentoValorStr) : undefined,
       });
+
+      // Compute sequential number for today
+      const today = new Date().toISOString().split("T")[0];
+      const ventasDelDia = await db
+        .select({ id: ventas.id, created_at: ventas.created_at })
+        .from(ventas)
+        .where(
+          and(
+            gte(ventas.created_at, `${today}T00:00:00.000Z`),
+            lte(ventas.created_at, `${today}T23:59:59.999Z`)
+          )
+        )
+        .orderBy(ventas.created_at);
+      const idx = ventasDelDia.findIndex((v) => v.id === ventaId);
+      const numeroVenta = idx >= 0 ? idx + 1 : null;
 
       const conf = await db.select().from(configuracion).where(eq(configuracion.clave, "nombre_negocio")).limit(1);
       const negocio = conf[0]?.valor || "Postrapi";
@@ -178,6 +212,7 @@ export default function VentasIndex() {
       const ticket: DatosTicket = {
         negocio,
         fecha: new Date().toISOString(),
+        numeroVenta,
         items: carrito.map(i => ({
           nombre: i.nombre,
           cantidad: i.cantidad,
@@ -186,7 +221,7 @@ export default function VentasIndex() {
         })),
         subtotal,
         descuentoTipo: descuentoActivo ? descuentoTipo : null,
-        descuentoValor: descuentoActivo && descuentoValorStr ? parseFloat(descuentoValorStr) : null,
+        descuentoValor: descuentoActivo && descuentoValorStr ? parseNumber(descuentoValorStr) : null,
         total: descuentoActivo ? totalConDescuento : subtotal,
         metodoPago,
         ventaId
@@ -203,6 +238,24 @@ export default function VentasIndex() {
     } finally {
       setProcesando(false);
     }
+  };
+
+  const handleCancelarCarrito = () => {
+    Alert.alert(
+      "Cancelar venta",
+      "¿Estás seguro? Se eliminarán todos los productos del carrito.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sí, vaciar",
+          style: "destructive",
+          onPress: () => {
+            limpiarCarrito();
+            setFiltroCategoria("todos");
+          },
+        },
+      ]
+    );
   };
 
   const handleCerrarCobro = () => {
@@ -284,29 +337,47 @@ export default function VentasIndex() {
       {/* Categorías */}
       <View style={{ paddingHorizontal: 16, marginBottom: 12 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          <TouchableOpacity
-            style={{
-              backgroundColor: isDark ? "#1e1e1e" : "#fff4e6",
-              paddingHorizontal: 14,
-              paddingVertical: 7,
-              borderRadius: 20,
-              borderWidth: 1,
-              borderColor: "#F97316",
-            }}
-          >
-            <Text style={{ color: "#F97316", fontSize: 12, fontWeight: "600" }}>Todos</Text>
-          </TouchableOpacity>
+          {(["todos", "combo", "bebida", "porcion"] as const).map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              onPress={() => setFiltroCategoria(cat)}
+              style={{
+                backgroundColor: filtroCategoria === cat
+                  ? "#F97316"
+                  : isDark
+                    ? "#1e1e1e"
+                    : "#fff4e6",
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: filtroCategoria === cat ? "#F97316" : colors.border,
+              }}
+            >
+              <Text
+                style={{
+                  color: filtroCategoria === cat ? "#fff" : "#F97316",
+                  fontSize: 12,
+                  fontWeight: "600",
+                  textTransform: "capitalize",
+                }}
+              >
+                {cat === "todos" ? "Todos" : cat === "combo" ? "Combos" : cat === "bebida" ? "Bebidas" : "Porciones"}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       </View>
 
       {/* Grid de Productos */}
       <ScrollView 
+        ref={scrollRef}
         style={{ flex: 1 }} 
         contentContainerStyle={{ padding: 16, paddingBottom: 220 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8 }}>
-          {listaProductos.map((prod) => {
+          {productosFiltrados.map((prod) => {
             const qty = getCantidadEnCarrito(prod.id);
             return (
               <View
@@ -397,6 +468,20 @@ export default function VentasIndex() {
               borderColor: colors.border,
             }}
           >
+            <TouchableOpacity
+              onPress={handleCancelarCarrito}
+              style={{
+                paddingHorizontal: 18,
+                paddingVertical: 18,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: colors.border,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: colors.textMuted, fontWeight: "500", fontSize: 16 }}>Cancelar</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setModalCobro(true)}
               style={{

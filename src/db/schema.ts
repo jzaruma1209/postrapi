@@ -6,6 +6,7 @@ export const productos = sqliteTable("productos", {
   nombre: text("nombre").notNull(),
   precio: real("precio").notNull(),
   imagenUrl: text("imagen_url"),
+  categoria: text("categoria").notNull().default("combo"),
   activo: integer("activo").notNull().default(1),
   created_at: text("created_at").notNull(),
   synced: integer("synced").notNull().default(0),
@@ -144,6 +145,16 @@ export const cajaDiaria = sqliteTable("caja_diaria", {
   cerrada_at: text("cerrada_at"),
   created_at: text("created_at").notNull(),
   synced: integer("synced").notNull().default(0),
+});
+
+// ─── SYNC LOG (solo local) ──────────────────────────────
+export const syncLog = sqliteTable("sync_log", {
+  id: text("id").primaryKey(),
+  tabla: text("tabla").notNull(),
+  estado: text("estado").notNull(), // "exitoso" | "fallido"
+  registros: integer("registros").notNull().default(0),
+  errorMensaje: text("error_mensaje"),
+  createdAt: text("created_at").notNull(),
 });
 
 // ─── CONFIGURACION ────────────────────────────────────────

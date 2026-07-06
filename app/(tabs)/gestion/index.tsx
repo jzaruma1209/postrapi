@@ -35,6 +35,13 @@ const MENU_ITEMS = [
     route: "/gestion/anulacion",
   },
   {
+    id: "respaldo",
+    title: "Respaldo",
+    description: "Estado de sincronización con la nube",
+    icon: "upload-cloud",
+    route: "/gestion/respaldo",
+  },
+  {
     id: "configuracion",
     title: "Configuración",
     description: "Nombre del negocio y preferencias",

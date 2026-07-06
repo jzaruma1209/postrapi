@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet, Vibration
+  Modal, View, Text, TouchableOpacity, StyleSheet, Vibration, TextInput, Alert
 } from "react-native";
-import { verificarPin, esPinDefault } from "../../services/pin.service";
+import { verificarPin, esPinDefault, cambiarPin } from "../../services/pin.service";
+import { generarCodigoRecuperacion } from "../../utils/pinRecovery";
 import { useColors, useThemeStore } from "../../stores/useThemeStore";
 
 interface PinModalProps {
@@ -25,13 +26,29 @@ export default function PinModal({
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
   const [verificando, setVerificando] = useState(false);
-  // Fase: "pin" = ingresando PIN | "advertencia" = mostrando aviso de PIN default
-  const [fase, setFase] = useState<"pin" | "advertencia">("pin");
+  
+  // Fases: "pin" | "advertencia" | "recuperar" | "setNuevoPin" | "confirmarNuevoPin"
+  const [fase, setFase] = useState<"pin" | "advertencia" | "recuperar" | "setNuevoPin" | "confirmarNuevoPin">("pin");
+  
+  // Recovery States
+  const [intentosFallidos, setIntentosFallidos] = useState(0);
+  const [codigoRecuperacion, setCodigoRecuperacion] = useState("");
+  const [errorRecuperacion, setErrorRecuperacion] = useState("");
+  const [nuevoPin, setNuevoPin] = useState("");
 
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
+  const fechaHoyStr = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }, []);
+
   const handleTecla = async (tecla: string) => {
-    if (verificando || fase === "advertencia") return;
+    if (verificando || fase === "advertencia" || fase === "recuperar") return;
 
     if (tecla === "⌫") {
       setPin((prev) => prev.slice(0, -1));
@@ -41,38 +58,97 @@ export default function PinModal({
 
     if (tecla === "") return;
 
-    const nuevoPin = pin + tecla;
-    setPin(nuevoPin);
+    const nuevoValor = pin + tecla;
+    setPin(nuevoValor);
     setError(false);
 
-    if (nuevoPin.length === 4) {
-      setVerificando(true);
-      const ok = await verificarPin(nuevoPin);
-      setVerificando(false);
+    if (fase === "pin") {
+      if (nuevoValor.length === 4) {
+        setVerificando(true);
+        const ok = await verificarPin(nuevoValor);
+        setVerificando(false);
 
-      if (ok) {
-        setPin("");
-        setError(false);
-        // Si el PIN es el default (0000), mostrar advertencia antes de dar acceso
-        if (esPinDefault(nuevoPin)) {
-          setFase("advertencia");
-        } else {
-          // PIN personalizado → dar acceso inmediatamente
-          onSuccess();
-        }
-      } else {
-        Vibration.vibrate(300);
-        setError(true);
-        setTimeout(() => {
+        if (ok) {
           setPin("");
           setError(false);
-        }, 800);
+          setIntentosFallidos(0);
+          if (esPinDefault(nuevoValor)) {
+            setFase("advertencia");
+          } else {
+            onSuccess();
+          }
+        } else {
+          Vibration.vibrate(300);
+          setError(true);
+          setIntentosFallidos((prev) => prev + 1);
+          setTimeout(() => {
+            setPin("");
+            setError(false);
+          }, 800);
+        }
+      }
+    } else if (fase === "setNuevoPin") {
+      if (nuevoValor.length === 4) {
+        setNuevoPin(nuevoValor);
+        setPin("");
+        setFase("confirmarNuevoPin");
+      }
+    } else if (fase === "confirmarNuevoPin") {
+      if (nuevoValor.length === 4) {
+        if (nuevoValor === nuevoPin) {
+          setVerificando(true);
+          try {
+            await cambiarPin(nuevoValor);
+            setVerificando(false);
+            setIntentosFallidos(0);
+            Alert.alert("Éxito", "PIN actualizado correctamente.", [
+              {
+                text: "OK",
+                onPress: () => {
+                  setPin("");
+                  setNuevoPin("");
+                  setFase("pin");
+                  onSuccess();
+                },
+              },
+            ]);
+          } catch (err) {
+            setVerificando(false);
+            Alert.alert("Error", "No se pudo actualizar el PIN.");
+          }
+        } else {
+          Vibration.vibrate(300);
+          setError(true);
+          setTimeout(() => {
+            setPin("");
+            setError(false);
+            setFase("setNuevoPin");
+            setNuevoPin("");
+          }, 800);
+        }
       }
     }
   };
 
+  const handleVerificarCodigo = () => {
+    if (codigoRecuperacion.length !== 6) {
+      setErrorRecuperacion("El código debe tener 6 dígitos.");
+      return;
+    }
+
+    const correcto = generarCodigoRecuperacion(new Date());
+    if (codigoRecuperacion === correcto) {
+      setErrorRecuperacion("");
+      setPin("");
+      setCodigoRecuperacion("");
+      setFase("setNuevoPin");
+    } else {
+      Vibration.vibrate(300);
+      setErrorRecuperacion("Código incorrecto");
+    }
+  };
+
   const handleEntendido = () => {
-    // El usuario leyó la advertencia → ahora sí dar acceso
     setFase("pin");
     onSuccess();
   };
@@ -81,6 +157,10 @@ export default function PinModal({
     setPin("");
     setError(false);
     setFase("pin");
+    setIntentosFallidos(0);
+    setCodigoRecuperacion("");
+    setNuevoPin("");
+    setErrorRecuperacion("");
     onCancel();
   };
 
@@ -92,7 +172,6 @@ export default function PinModal({
           {/* ── FASE: ADVERTENCIA ── */}
           {fase === "advertencia" ? (
             <>
-              {/* Ícono de candado */}
               <View style={styles.iconoCirculo}>
                 <Text style={styles.iconoEmoji}>🔒</Text>
               </View>
@@ -121,13 +200,66 @@ export default function PinModal({
                 <Text style={styles.btnEntendidoTexto}>Entendido, entrar</Text>
               </TouchableOpacity>
             </>
-          ) : (
-
-            /* ── FASE: INGRESAR PIN ── */
+          ) : fase === "recuperar" ? (
+            /* ── FASE: RECUPERAR PIN ── */
             <>
-              <Text style={styles.titulo}>{titulo}</Text>
+              <Text style={styles.titulo}>Recuperar PIN</Text>
+              
+              <Text style={styles.descRecuperar}>
+                Comunícate con soporte y proporciona la fecha actual:
+              </Text>
+              
+              <Text style={styles.fechaRecuperar}>
+                {fechaHoyStr}
+              </Text>
+              
+              <TextInput
+                value={codigoRecuperacion}
+                onChangeText={(val) => {
+                  setCodigoRecuperacion(val);
+                  setErrorRecuperacion("");
+                }}
+                keyboardType="numeric"
+                maxLength={6}
+                style={styles.inputRecuperar}
+                placeholder="Código de 6 dígitos"
+                placeholderTextColor={colors.textMuted}
+              />
 
-              {/* Indicador de dígitos */}
+              {!!errorRecuperacion && (
+                <Text style={styles.errorText}>{errorRecuperacion}</Text>
+              )}
+
+              <TouchableOpacity
+                style={styles.btnVerificar}
+                onPress={handleVerificarCodigo}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.btnVerificarTexto}>Verificar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.btnVolver}
+                onPress={() => {
+                  setFase("pin");
+                  setCodigoRecuperacion("");
+                  setErrorRecuperacion("");
+                }}
+              >
+                <Text style={styles.btnVolverTexto}>Volver</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            /* ── FASES: INGRESAR PIN, NUEVO PIN, CONFIRMAR NUEVO PIN ── */
+            <>
+              <Text style={styles.titulo}>
+                {fase === "pin"
+                  ? titulo
+                  : fase === "setNuevoPin"
+                  ? "Crea tu nuevo PIN"
+                  : "Confirma tu nuevo PIN"}
+              </Text>
+
               <View style={styles.dotsRow}>
                 {[0, 1, 2, 3].map((i) => (
                   <View
@@ -142,14 +274,17 @@ export default function PinModal({
               </View>
 
               {error && (
-                <Text style={styles.errorText}>PIN incorrecto</Text>
+                <Text style={styles.errorText}>
+                  {fase === "confirmarNuevoPin" ? "Los PINs no coinciden" : "PIN incorrecto"}
+                </Text>
               )}
 
               {verificando && (
-                <Text style={styles.verificandoText}>Verificando...</Text>
+                <Text style={styles.verificandoText}>
+                  {fase === "confirmarNuevoPin" ? "Guardando..." : "Verificando..."}
+                </Text>
               )}
 
-              {/* Teclado numérico */}
               <View style={styles.teclado}>
                 {TECLAS.map((tecla, index) => (
                   <TouchableOpacity
@@ -174,6 +309,19 @@ export default function PinModal({
                   </TouchableOpacity>
                 ))}
               </View>
+
+              {fase === "pin" && intentosFallidos >= 4 && (
+                <TouchableOpacity
+                  style={styles.forgotBtn}
+                  onPress={() => {
+                    setFase("recuperar");
+                    setCodigoRecuperacion("");
+                    setErrorRecuperacion("");
+                  }}
+                >
+                  <Text style={styles.forgotTexto}>¿Olvidaste tu PIN?</Text>
+                </TouchableOpacity>
+              )}
 
               <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
                 <Text style={styles.cancelTexto}>Cancelar</Text>
@@ -276,6 +424,64 @@ const createStyles = (colors: ReturnType<typeof useColors>, isDark: boolean) =>
       padding: 10,
     },
     cancelTexto: {
+      color: colors.textMuted,
+      fontSize: 14,
+    },
+    forgotBtn: {
+      marginTop: 4,
+      marginBottom: 8,
+      padding: 10,
+    },
+    forgotTexto: {
+      color: "#F97316",
+      fontSize: 13,
+      fontWeight: "500",
+      textDecorationLine: "underline",
+    },
+    descRecuperar: {
+      color: colors.textMuted,
+      fontSize: 12,
+      textAlign: "center",
+      marginBottom: 12,
+      lineHeight: 18,
+    },
+    fechaRecuperar: {
+      color: "#F97316",
+      fontSize: 18,
+      fontWeight: "bold",
+      textAlign: "center",
+      marginBottom: 16,
+    },
+    inputRecuperar: {
+      backgroundColor: colors.bgInput,
+      color: colors.text,
+      borderRadius: 10,
+      padding: 12,
+      fontSize: 16,
+      textAlign: "center",
+      width: "100%",
+      letterSpacing: 2,
+      marginBottom: 16,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+    },
+    btnVerificar: {
+      backgroundColor: "#F97316",
+      borderRadius: 12,
+      paddingVertical: 12,
+      width: "100%",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    btnVerificarTexto: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    btnVolver: {
+      padding: 10,
+    },
+    btnVolverTexto: {
       color: colors.textMuted,
       fontSize: 14,
     },

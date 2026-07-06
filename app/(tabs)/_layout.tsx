@@ -91,6 +91,11 @@ export default function TabsLayout() {
             <TabIcon name="shopping-cart" color={color} size={size} />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate("ventas", { screen: "index" });
+          },
+        })}
       />
       <Tabs.Screen
         name="pedidos"

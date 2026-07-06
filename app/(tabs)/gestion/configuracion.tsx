@@ -18,6 +18,7 @@ import { db } from "../../../src/db";
 import { configuracion } from "../../../src/db/schema";
 import { escanearDispositivos } from "../../../src/services/printer.service";
 import { useThemeStore, useColors } from "../../../src/stores/useThemeStore";
+import { parseNumber } from "../../../src/utils/numbers";
 
 const DEFAULT_CONFIG = {
   nombre_negocio: "Mi Negocio",
@@ -98,7 +99,7 @@ export default function GestionConfiguracion() {
   };
 
   const guardarCambios = async () => {
-    if (!nombreNegocio.trim() || !moneda.trim() || !stockMinimo.trim() || isNaN(Number(stockMinimo))) {
+    if (!nombreNegocio.trim() || !moneda.trim() || !stockMinimo.trim() || isNaN(parseNumber(stockMinimo))) {
       Alert.alert("Error", "Revisa los campos. Algunos están vacíos o no son válidos.");
       return;
     }

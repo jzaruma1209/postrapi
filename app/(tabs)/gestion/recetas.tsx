@@ -13,6 +13,7 @@ import {
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { generateId } from "../../../src/utils/uuid";
+import { parseNumber } from "../../../src/utils/numbers";
 import { eq, and } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, ingredientes, recetas, Producto, Ingrediente, Receta } from "../../../src/db/schema";
@@ -90,7 +91,7 @@ export default function GestionRecetas() {
   };
 
   const guardarReceta = async () => {
-    if (!productoActual || !ingredienteSeleccionado || !cantidad || isNaN(Number(cantidad))) {
+    if (!productoActual || !ingredienteSeleccionado || !cantidad || isNaN(parseNumber(cantidad))) {
       Alert.alert("Error", "Debe seleccionar un ingrediente y proveer una cantidad válida.");
       return;
     }
@@ -100,7 +101,7 @@ export default function GestionRecetas() {
         id: generateId(),
         productoId: productoActual.id,
         ingredienteId: ingredienteSeleccionado,
-        cantidad: Number(cantidad),
+        cantidad: parseNumber(cantidad),
         created_at: new Date().toISOString(),
         synced: 0,
       });

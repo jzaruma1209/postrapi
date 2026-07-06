@@ -204,5 +204,22 @@ export async function runMigrations(): Promise<void> {
     await db.run(sql`ALTER TABLE pedidos ADD COLUMN motivo_anulacion TEXT;`);
   } catch { /* columna ya existe */ }
 
+  // Migración 0003: categoría en productos
+  try {
+    await db.run(sql`ALTER TABLE productos ADD COLUMN categoria TEXT NOT NULL DEFAULT 'combo';`);
+  } catch { /* columna ya existe */ }
+
+  // Migración 0004: tabla de log de sincronización (solo local)
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS sync_log (
+      id TEXT PRIMARY KEY,
+      tabla TEXT NOT NULL,
+      estado TEXT NOT NULL,
+      registros INTEGER NOT NULL DEFAULT 0,
+      error_mensaje TEXT,
+      created_at TEXT NOT NULL
+    );
+  `);
+
   console.log("✅ Migrations ejecutadas correctamente");
 }

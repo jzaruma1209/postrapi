@@ -288,7 +288,7 @@ export default function AnulacionScreen() {
         </TouchableOpacity>
       </View>
 
-      {showPicker && (
+      {filtroActivo === "otro" && showPicker && (
         <DateTimePicker
           value={new Date(fechaSeleccionada + "T12:00:00.000Z")}
           mode="date"

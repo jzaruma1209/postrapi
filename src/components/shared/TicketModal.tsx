@@ -42,6 +42,9 @@ export default function TicketModal({ visible, datos, onClose }: TicketModalProp
           <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
             {/* Encabezado */}
             <Text style={styles.negocio}>{datos.negocio}</Text>
+            {datos.numeroVenta != null && (
+              <Text style={styles.numeroVenta}>Venta #{datos.numeroVenta}</Text>
+            )}
             <Text style={styles.fecha}>
               {formatDate(datos.fecha)} {formatTime(datos.fecha)}
             </Text>
@@ -147,6 +150,13 @@ const createStyles = (colors: ReturnType<typeof useColors>, isDark: boolean) =>
       color: colors.text,
       fontSize: 16,
       fontWeight: "500",
+      textAlign: "center",
+      marginBottom: 4,
+    },
+    numeroVenta: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: "600",
       textAlign: "center",
       marginBottom: 4,
     },

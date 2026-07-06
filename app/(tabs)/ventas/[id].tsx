@@ -217,6 +217,11 @@ export default function DetalleVenta() {
             <Text style={{ fontSize: 18, fontWeight: "bold", textAlign: "center", marginBottom: 16, color: "#000" }}>
               POSTRAPI
             </Text>
+            {numeroVenta != null && (
+              <Text style={{ fontSize: 12, textAlign: "center", marginBottom: 4, color: "#000", fontWeight: "600" }}>
+                Venta #{numeroVenta}
+              </Text>
+            )}
             <Text style={{ fontSize: 12, textAlign: "center", marginBottom: 24, color: "#333" }}>
               {formatFechaHora(detalle.venta.created_at)}
             </Text>

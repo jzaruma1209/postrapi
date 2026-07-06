@@ -83,6 +83,7 @@ export default function HistorialCajas() {
   const seleccionarHoy = () => {
     setFiltroActivo("hoy");
     setFechaSeleccionada(todayDate());
+    setShowPicker(false);
   };
 
   const seleccionarAyer = () => {
@@ -90,6 +91,7 @@ export default function HistorialCajas() {
     const d = new Date();
     d.setDate(d.getDate() - 1);
     setFechaSeleccionada(d.toISOString().split("T")[0]);
+    setShowPicker(false);
   };
 
   const seleccionarOtros = () => {
@@ -182,7 +184,7 @@ export default function HistorialCajas() {
         </TouchableOpacity>
       </View>
 
-      {showPicker && (
+      {filtroActivo === "otro" && showPicker && (
         <DateTimePicker
           value={new Date(fechaSeleccionada + "T12:00:00.000Z")}
           mode="date"

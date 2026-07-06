@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { generateId } from "../../../src/utils/uuid";
+import { parseNumber } from "../../../src/utils/numbers";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { productos, Producto } from "../../../src/db/schema";
@@ -31,6 +32,7 @@ export default function GestionProductos() {
   // Form
   const [nombre, setNombre] = useState("");
   const [precio, setPrecio] = useState("");
+  const [categoria, setCategoria] = useState("combo");
   const [activo, setActivo] = useState(true);
 
   const cargarProductos = async () => {
@@ -52,6 +54,7 @@ export default function GestionProductos() {
     setEditando(null);
     setNombre("");
     setPrecio("");
+    setCategoria("combo");
     setActivo(true);
     setModalVisible(true);
   };
@@ -60,12 +63,13 @@ export default function GestionProductos() {
     setEditando(prod);
     setNombre(prod.nombre);
     setPrecio(prod.precio.toString());
+    setCategoria(prod.categoria || "combo");
     setActivo(prod.activo === 1);
     setModalVisible(true);
   };
 
   const guardarProducto = async () => {
-    if (!nombre.trim() || !precio.trim() || isNaN(Number(precio))) {
+    if (!nombre.trim() || !precio.trim() || isNaN(parseNumber(precio))) {
       Alert.alert("Error", "Nombre y precio válidos son requeridos.");
       return;
     }
@@ -76,7 +80,8 @@ export default function GestionProductos() {
           .update(productos)
           .set({
             nombre: nombre.trim(),
-            precio: Number(precio),
+            precio: parseNumber(precio),
+            categoria,
             activo: activo ? 1 : 0,
             synced: 0,
           })
@@ -85,7 +90,8 @@ export default function GestionProductos() {
         await db.insert(productos).values({
           id: generateId(),
           nombre: nombre.trim(),
-          precio: Number(precio),
+          precio: parseNumber(precio),
+          categoria,
           activo: activo ? 1 : 0,
           created_at: new Date().toISOString(),
           synced: 0,
@@ -261,6 +267,36 @@ export default function GestionProductos() {
                       placeholderTextColor={colors.textMuted}
                       placeholder="Ej. 1500"
                     />
+                  </View>
+
+                  <View>
+                    <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Categoría</Text>
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      {(["combo", "bebida", "porcion"] as const).map((cat) => (
+                        <TouchableOpacity
+                          key={cat}
+                          onPress={() => setCategoria(cat)}
+                          style={{
+                            flex: 1,
+                            backgroundColor: categoria === cat ? "#F97316" : colors.bgInput,
+                            paddingVertical: 10,
+                            borderRadius: 10,
+                            alignItems: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: categoria === cat ? "#fff" : colors.textLight,
+                              fontSize: 12,
+                              fontWeight: "600",
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {cat === "combo" ? "Combo" : cat === "bebida" ? "Bebida" : "Porción"}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
 
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>

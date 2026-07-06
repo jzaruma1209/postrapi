@@ -3,9 +3,11 @@ import { supabase, isSupabaseConfigured } from "../supabase/client";
 import { db } from "../db";
 import {
   productos, ingredientes, recetas, pedidos, pedidoItems,
-  ventas, ventaItems, movimientosInventario, compras, gastos, cajaDiaria
+  ventas, ventaItems, movimientosInventario, compras, gastos, cajaDiaria,
+  syncLog,
 } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
+import { generateId } from "../utils/uuid";
 
 function toSnakeCase(obj: Record<string, any>): Record<string, any> {
   return Object.fromEntries(
@@ -16,7 +18,6 @@ function toSnakeCase(obj: Record<string, any>): Record<string, any> {
   );
 }
 
-// Tablas a sincronizar en orden (respetar foreign keys)
 const SYNC_TABLES = [
   { table: productos, name: "productos" },
   { table: ingredientes, name: "ingredientes" },
@@ -42,7 +43,6 @@ export async function sincronizar(): Promise<{ ok: boolean; mensaje: string }> {
     return { ok: false, mensaje: "Sync ya en progreso" };
   }
 
-  // Verificar conexión
   const netInfo = await NetInfo.fetch();
   if (!netInfo.isConnected) {
     return { ok: false, mensaje: "Sin conexión a internet" };
@@ -50,18 +50,27 @@ export async function sincronizar(): Promise<{ ok: boolean; mensaje: string }> {
 
   syncEnProgreso = true;
   let totalSincronizados = 0;
+  const now = new Date().toISOString();
 
   try {
     for (const { table, name } of SYNC_TABLES) {
-      // Obtener registros pendientes de sync
       const pendientes = await db
         .select()
         .from(table)
         .where(eq((table as any).synced, 0));
 
-      if (pendientes.length === 0) continue;
+      if (pendientes.length === 0) {
+        await db.insert(syncLog).values({
+          id: generateId(),
+          tabla: name,
+          estado: "exitoso",
+          registros: 0,
+          errorMensaje: null,
+          createdAt: now,
+        });
+        continue;
+      }
 
-      // Subir a Supabase con upsert (por si hay conflictos)
       const pendientesSnake = pendientes.map(toSnakeCase);
 
       const { error } = await supabase
@@ -70,16 +79,32 @@ export async function sincronizar(): Promise<{ ok: boolean; mensaje: string }> {
 
       if (error) {
         console.error(`Error sync tabla ${name}:`, error.message);
+        await db.insert(syncLog).values({
+          id: generateId(),
+          tabla: name,
+          estado: "fallido",
+          registros: 0,
+          errorMensaje: error.message,
+          createdAt: now,
+        });
         continue;
       }
 
-      // Marcar como sincronizados en SQLite
       for (const registro of pendientes) {
         await db
           .update(table)
           .set({ synced: 1 } as any)
           .where(eq((table as any).id, (registro as any).id));
       }
+
+      await db.insert(syncLog).values({
+        id: generateId(),
+        tabla: name,
+        estado: "exitoso",
+        registros: pendientes.length,
+        errorMensaje: null,
+        createdAt: now,
+      });
 
       totalSincronizados += pendientes.length;
     }
@@ -96,7 +121,6 @@ export async function sincronizar(): Promise<{ ok: boolean; mensaje: string }> {
   }
 }
 
-// Sync automático en background
 export function iniciarSyncAutomatico(intervalMs = 60000): () => void {
   if (!isSupabaseConfigured) return () => {};
 
@@ -108,4 +132,38 @@ export function iniciarSyncAutomatico(intervalMs = 60000): () => void {
   }, intervalMs);
 
   return () => clearInterval(interval);
+}
+
+export async function contarPendientes(): Promise<Record<string, number>> {
+  const resultado: Record<string, number> = {};
+
+  for (const { table, name } of SYNC_TABLES) {
+    const [fila] = await db
+      .select({ total: count() })
+      .from(table)
+      .where(eq((table as any).synced, 0));
+
+    resultado[name] = fila?.total ?? 0;
+  }
+
+  return resultado;
+}
+
+export async function obtenerUltimosSyncLogs(): Promise<
+  Record<string, typeof syncLog.$inferSelect | null>
+> {
+  const resultado: Record<string, typeof syncLog.$inferSelect | null> = {};
+
+  for (const { name } of SYNC_TABLES) {
+    const [log] = await db
+      .select()
+      .from(syncLog)
+      .where(eq(syncLog.tabla, name))
+      .orderBy(desc(syncLog.createdAt))
+      .limit(1);
+
+    resultado[name] = log ?? null;
+  }
+
+  return resultado;
 }

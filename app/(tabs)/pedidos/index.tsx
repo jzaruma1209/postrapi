@@ -8,15 +8,18 @@ import {
   TextInput,
   Platform,
   Alert,
+  KeyboardAvoidingView,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { eq } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { db } from "../../../src/db";
-import { productos, Producto, Pedido, configuracion } from "../../../src/db/schema";
+import { productos, Producto, Pedido, configuracion, ventas } from "../../../src/db/schema";
 import TicketModal from "../../../src/components/shared/TicketModal";
 import PinModal from "../../../src/components/shared/PinModal";
 import type { DatosTicket } from "../../../src/services/printer.service";
+import { parseNumber } from "../../../src/utils/numbers";
 import {
   getPedidosHoy,
   getPedidoItems,
@@ -28,6 +31,7 @@ import {
 } from "../../../src/services/pedidos.service";
 import type { OrigenPedido, MetodoPago, EstadoPedido } from "../../../src/utils/types";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type PedidoCompleto = Pedido & {
   resumenItems: string;
@@ -37,6 +41,7 @@ export default function PedidosIndex() {
   const router = useRouter();
   const colors = useColors();
   const isDark = useThemeStore((s) => s.isDark);
+  const insets = useSafeAreaInsets();
 
   const [pedidosLista, setPedidosLista] = useState<PedidoCompleto[]>([]);
   const [filtro, setFiltro] = useState<"todos" | EstadoPedido>("todos");
@@ -75,7 +80,7 @@ export default function PedidosIndex() {
 
   const descuentoCalculado = useMemo(() => {
     if (!descuentoActivo || !descuentoValorStr) return 0;
-    const valor = parseFloat(descuentoValorStr);
+    const valor = parseNumber(descuentoValorStr);
     if (isNaN(valor) || valor <= 0) return 0;
     if (descuentoTipo === 'monto') return Math.min(valor, subtotalCobro);
     return Math.min(subtotalCobro * (valor / 100), subtotalCobro);
@@ -85,7 +90,7 @@ export default function PedidosIndex() {
 
   const errorDescuento = useMemo(() => {
     if (!descuentoActivo || !descuentoValorStr) return null;
-    const valor = parseFloat(descuentoValorStr);
+    const valor = parseNumber(descuentoValorStr);
     if (isNaN(valor) || valor <= 0) return null;
     if (descuentoTipo === 'monto' && valor > subtotalCobro) return "El descuento no puede ser mayor al total.";
     if (descuentoTipo === 'porcentaje' && valor > 100) return "El porcentaje no puede ser mayor a 100%.";
@@ -223,7 +228,22 @@ export default function PedidosIndex() {
     if (!pedidoACobrar) return;
     setProcesando(true);
     try {
-      const ventaId = await entregarPedido(pedidoACobrar, metodoPago, descuentoActivo ? descuentoTipo : undefined, descuentoActivo && descuentoValorStr ? parseFloat(descuentoValorStr) : undefined);
+      const ventaId = await entregarPedido(pedidoACobrar, metodoPago, descuentoActivo ? descuentoTipo : undefined, descuentoActivo && descuentoValorStr ? parseNumber(descuentoValorStr) : undefined);
+      
+      // Compute sequential number for today
+      const today = new Date().toISOString().split("T")[0];
+      const ventasDelDia = await db
+        .select({ id: ventas.id, created_at: ventas.created_at })
+        .from(ventas)
+        .where(
+          and(
+            gte(ventas.created_at, `${today}T00:00:00.000Z`),
+            lte(ventas.created_at, `${today}T23:59:59.999Z`)
+          )
+        )
+        .orderBy(ventas.created_at);
+      const idx = ventasDelDia.findIndex((v) => v.id === ventaId);
+      const numeroVenta = idx >= 0 ? idx + 1 : null;
       
       const conf = await db.select().from(configuracion).where(eq(configuracion.clave, "nombre_negocio")).limit(1);
       const negocio = conf[0]?.valor || "Postrapi";
@@ -231,6 +251,7 @@ export default function PedidosIndex() {
       const ticket: DatosTicket = {
         negocio,
         fecha: new Date().toISOString(),
+        numeroVenta,
         items: itemsCobroInfo,
         total: descuentoActivo ? totalConDescuento : subtotalCobro,
         metodoPago,
@@ -544,12 +565,12 @@ export default function PedidosIndex() {
 
       {/* Modal Nuevo Pedido */}
       <Modal visible={modalNuevo} transparent animationType="slide" onRequestClose={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }}>
-        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
-          <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" }}>
+          <View style={{ backgroundColor: colors.bgCard, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 24, maxHeight: '90%' }}>
             <View style={{ width: 36, height: 4, backgroundColor: colors.bgInput, borderRadius: 2, alignSelf: "center", marginBottom: 20 }} />
             <Text style={{ fontSize: 18, fontWeight: "600", color: colors.text, marginBottom: 16 }}>Nuevo Pedido</Text>
 
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 + insets.bottom }}>
               <View style={{ gap: 12, marginBottom: 16 }}>
                 <TextInput
                   value={clienteNombre}
@@ -611,18 +632,38 @@ export default function PedidosIndex() {
                   );
                 })}
               </View>
-
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 16, marginBottom: 16 }}>
-                <TouchableOpacity onPress={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }} disabled={procesando} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center" }}>
-                  <Text style={{ color: colors.textMuted, fontWeight: "500" }}>Cancelar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={confirmarCrearPedido} disabled={procesando} style={{ flex: 1, backgroundColor: procesando ? "#aaa" : "#F97316", padding: 14, borderRadius: 10, alignItems: "center" }}>
-                  <Text style={{ color: "#fff", fontWeight: "600" }}>{procesando ? "Creando..." : "Crear Pedido"}</Text>
-                </TouchableOpacity>
-              </View>
             </ScrollView>
+
+            <View style={{ position: 'absolute', bottom: 36 + insets.bottom, left: 24, right: 24, borderRadius: 16, overflow: 'hidden' }}>
+              <BlurView
+                intensity={Platform.OS === "android" ? 65 : 40}
+                tint={isDark ? "dark" : "light"}
+                style={{
+                  flexDirection: "row",
+                  padding: 16,
+                  gap: 12,
+                  borderWidth: 0.5,
+                  borderColor: colors.border,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => { setCarritoNuevo([]); setClienteNombre(""); setNota(""); setOrigen("en_persona"); setModalNuevo(false); }}
+                  disabled={procesando}
+                  style={{ paddingHorizontal: 18, paddingVertical: 18, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Text style={{ color: colors.textMuted, fontWeight: "500", fontSize: 16 }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={confirmarCrearPedido}
+                  disabled={procesando}
+                  style={{ flex: 1, backgroundColor: procesando ? "#aaa" : "#F97316", borderRadius: 10, padding: 18, alignItems: "center" }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 16 }}>{procesando ? "Creando..." : "Crear Pedido"}</Text>
+                </TouchableOpacity>
+              </BlurView>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Modal Cobro */}

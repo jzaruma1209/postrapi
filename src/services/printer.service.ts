@@ -20,6 +20,7 @@ try {
 export interface DatosTicket {
   negocio: string;
   fecha: string; // ISO string
+  numeroVenta?: number;
   items: {
     nombre: string;
     cantidad: number;
@@ -83,6 +84,9 @@ export async function imprimirTicket(datos: DatosTicket): Promise<boolean> {
     await BluetoothEscposPrinter.printText(datos.negocio + "\n", { widthtimes: 1, heigthtimes: 1 });
     await BluetoothEscposPrinter.printText("--------------------------------\n", {});
     await BluetoothEscposPrinter.printText(formatDate(datos.fecha) + " " + formatTime(datos.fecha) + "\n", {});
+    if (datos.numeroVenta != null) {
+      await BluetoothEscposPrinter.printText("Venta #" + datos.numeroVenta + "\n", {});
+    }
     await BluetoothEscposPrinter.printText("--------------------------------\n", {});
 
     // Items

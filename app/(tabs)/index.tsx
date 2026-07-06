@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Platform } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -102,13 +102,25 @@ export default function ResumenIndex() {
 
   useFocusEffect(
     useCallback(() => {
-      cargarDashboard(fechaSeleccionada);
-    }, [fechaSeleccionada])
+      setFiltroActivo("hoy");
+      setShowPicker(false);
+      setFechaSeleccionada((prev) => {
+        if (prev === todayDate()) {
+          cargarDashboard(todayDate());
+        }
+        return todayDate();
+      });
+    }, [])
   );
+
+  useEffect(() => {
+    cargarDashboard(fechaSeleccionada);
+  }, [fechaSeleccionada]);
 
   const seleccionarHoy = () => {
     setFiltroActivo("hoy");
     setFechaSeleccionada(todayDate());
+    setShowPicker(false);
   };
 
   const seleccionarAyer = () => {
@@ -116,6 +128,7 @@ export default function ResumenIndex() {
     const d = new Date();
     d.setDate(d.getDate() - 1);
     setFechaSeleccionada(d.toISOString().split("T")[0]);
+    setShowPicker(false);
   };
 
   const seleccionarOtros = () => {
@@ -220,33 +233,7 @@ export default function ResumenIndex() {
         </TouchableOpacity>
       </View>
 
-      {filtroActivo === "otro" && (
-        <TouchableOpacity
-          onPress={() => setShowPicker(true)}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            alignSelf: "center",
-            backgroundColor: colors.bgChip,
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 20,
-            gap: 6,
-            marginBottom: 16,
-          }}
-        >
-          <Feather name="calendar" size={14} color={colors.textLight} />
-          <Text style={{ color: colors.textLight, fontSize: 13 }}>
-            {new Date(fechaSeleccionada + "T12:00:00.000Z").toLocaleDateString("es-ES", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {showPicker && (
+      {filtroActivo === "otro" && showPicker && (
         <DateTimePicker
           value={new Date(fechaSeleccionada + "T12:00:00.000Z")}
           mode="date"
