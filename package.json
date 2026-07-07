@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+"postinstall": "patch-package"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -45,6 +46,7 @@
     "@types/react": "~19.1.0",
     "@types/uuid": "^9.0.8",
     "drizzle-kit": "^0.31.10",
+    "patch-package": "^8.0.1",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.2"
   },
