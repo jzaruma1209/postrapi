@@ -1,5 +1,5 @@
 diff --git a/node_modules/react-native-bluetooth-escpos-printer/android/build.gradle b/node_modules/react-native-bluetooth-escpos-printer/android/build.gradle
-index d86e4f5..d0ee2ed 100644
+index d86e4f5..7b553f0 100644
 --- a/node_modules/react-native-bluetooth-escpos-printer/android/build.gradle
 +++ b/node_modules/react-native-bluetooth-escpos-printer/android/build.gradle
 @@ -1,7 +1,7 @@
@@ -12,7 +12,7 @@ index d86e4f5..d0ee2ed 100644
          mavenCentral()
          maven {
              // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
-@@ -11,25 +11,19 @@ buildscript {
+@@ -11,25 +11,21 @@ buildscript {
              url 'https://maven.google.com'
          }
      }
@@ -28,6 +28,7 @@ index d86e4f5..d0ee2ed 100644
 -    compileSdkVersion 27
 -    buildToolsVersion "27.0.3"
 -
++    namespace "com.jaycxu.bluetoothprint"
 +    compileSdkVersion 36
      defaultConfig {
 -        minSdkVersion 16
@@ -36,13 +37,13 @@ index d86e4f5..d0ee2ed 100644
 +        targetSdkVersion 36
          versionCode 1
          versionName "1.0"
--    }
+     }
 -    lintOptions {
-+    }    lintOptions {
++    lint {
          abortOnError false
      }
      sourceSets {
-@@ -38,10 +32,9 @@ android {
+@@ -38,10 +34,9 @@ android {
          }
      }
  }
@@ -55,7 +56,7 @@ index d86e4f5..d0ee2ed 100644
      mavenCentral()
      maven {
          // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
-@@ -51,9 +44,8 @@ repositories {
+@@ -51,9 +46,8 @@ repositories {
          url 'https://maven.google.com'
      }
  }
