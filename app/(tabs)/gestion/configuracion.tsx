@@ -16,7 +16,7 @@ import { Feather } from "@expo/vector-icons";
 import { eq } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { configuracion } from "../../../src/db/schema";
-import { escanearDispositivos } from "../../../src/services/printer.service";
+// [DESACTIVADO para v1] import { escanearDispositivos } from "../../../src/services/printer.service";
 import { useThemeStore, useColors } from "../../../src/stores/useThemeStore";
 import { parseNumber } from "../../../src/utils/numbers";
 
@@ -92,10 +92,8 @@ export default function GestionConfiguracion() {
   };
 
   const handleEscanear = async () => {
-    setEscaneando(true);
-    const devs = await escanearDispositivos();
-    setDispositivos(devs);
     setEscaneando(false);
+    Alert.alert("Impresión no disponible", "La impresión Bluetooth estará disponible en la versión 2.");
   };
 
   const guardarCambios = async () => {

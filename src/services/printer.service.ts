@@ -4,17 +4,17 @@ import { configuracion } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { formatDate, formatTime, formatCurrency } from "../utils/dates";
 
-// Import condicional para evitar errores en desarrollo web
-let BluetoothEscposPrinter: any = null;
-let BluetoothManager: any = null;
-
-try {
-  const printer = require("react-native-bluetooth-escpos-printer");
-  BluetoothEscposPrinter = printer.BluetoothEscposPrinter;
-  BluetoothManager = printer.BluetoothManager;
-} catch (e) {
-  console.warn("Impresora Bluetooth no disponible en este entorno");
-}
+// [DESACTIVADO para v1] Import condicional de react-native-bluetooth-escpos-printer
+// let BluetoothEscposPrinter: any = null;
+// let BluetoothManager: any = null;
+//
+// try {
+//   const printer = require("react-native-bluetooth-escpos-printer");
+//   BluetoothEscposPrinter = printer.BluetoothEscposPrinter;
+//   BluetoothManager = printer.BluetoothManager;
+// } catch (e) {
+//   console.warn("Impresora Bluetooth no disponible en este entorno");
+// }
 
 // ─── TIPOS ────────────────────────────────────────────────
 export interface DatosTicket {
@@ -55,84 +55,19 @@ export async function getImpresoraMac(): Promise<string> {
 }
 
 // ─── CONECTAR IMPRESORA ───────────────────────────────────
-export async function conectarImpresora(mac: string): Promise<boolean> {
-  if (!BluetoothManager) return false;
-  try {
-    await BluetoothManager.connect(mac);
-    return true;
-  } catch (e) {
-    console.error("Error conectando impresora:", e);
-    return false;
-  }
+export async function conectarImpresora(_mac: string): Promise<boolean> {
+  console.warn("Impresión Bluetooth desactivada temporalmente - pendiente para v2");
+  return false;
 }
 
 // ─── IMPRIMIR TICKET ──────────────────────────────────────
-export async function imprimirTicket(datos: DatosTicket): Promise<boolean> {
-  if (!BluetoothEscposPrinter) return false;
-
-  try {
-    const mac = await getImpresoraMac();
-    if (!mac) return false;
-
-    const conectado = await conectarImpresora(mac);
-    if (!conectado) return false;
-
-    const { ALIGN } = BluetoothEscposPrinter;
-
-    // Encabezado
-    await BluetoothEscposPrinter.printerAlign(ALIGN.CENTER);
-    await BluetoothEscposPrinter.printText(datos.negocio + "\n", { widthtimes: 1, heigthtimes: 1 });
-    await BluetoothEscposPrinter.printText("--------------------------------\n", {});
-    await BluetoothEscposPrinter.printText(formatDate(datos.fecha) + " " + formatTime(datos.fecha) + "\n", {});
-    if (datos.numeroVenta != null) {
-      await BluetoothEscposPrinter.printText("Venta #" + datos.numeroVenta + "\n", {});
-    }
-    await BluetoothEscposPrinter.printText("--------------------------------\n", {});
-
-    // Items
-    await BluetoothEscposPrinter.printerAlign(ALIGN.LEFT);
-    for (const item of datos.items) {
-      await BluetoothEscposPrinter.printText(
-        `${item.nombre} x${item.cantidad}`.padEnd(24) + formatCurrency(item.subtotal).padStart(8) + "\n",
-        {}
-      );
-    }
-
-    // Total
-    await BluetoothEscposPrinter.printText("--------------------------------\n", {});
-    await BluetoothEscposPrinter.printerAlign(ALIGN.RIGHT);
-    await BluetoothEscposPrinter.printText(
-      "TOTAL: " + formatCurrency(datos.total) + "\n",
-      { widthtimes: 1, heigthtimes: 1 }
-    );
-    await BluetoothEscposPrinter.printText(
-      "Pago: " + datos.metodoPago.toUpperCase() + "\n",
-      {}
-    );
-
-    // Pie
-    await BluetoothEscposPrinter.printerAlign(ALIGN.CENTER);
-    await BluetoothEscposPrinter.printText("\nGracias por su compra!\n", {});
-    await BluetoothEscposPrinter.printText("--------------------------------\n", {});
-
-    // Avance de papel
-    await BluetoothEscposPrinter.printText("\n\n\n", {});
-
-    return true;
-  } catch (e) {
-    console.error("Error imprimiendo ticket:", e);
-    return false;
-  }
+export async function imprimirTicket(_datos: DatosTicket): Promise<boolean> {
+  console.warn("Impresión Bluetooth desactivada temporalmente - pendiente para v2");
+  return false;
 }
 
 // ─── ESCANEAR DISPOSITIVOS BLUETOOTH ─────────────────────
 export async function escanearDispositivos(): Promise<{ name: string; address: string }[]> {
-  if (!BluetoothManager) return [];
-  try {
-    const paired = await BluetoothManager.enableBluetooth();
-    return paired ?? [];
-  } catch (e) {
-    console.error("Error escaneando Bluetooth:", e);
-    return [];
-  }
+  console.warn("Impresión Bluetooth desactivada temporalmente - pendiente para v2");
+  return [];
 }

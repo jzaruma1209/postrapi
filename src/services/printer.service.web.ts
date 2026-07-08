@@ -26,14 +26,16 @@ export async function getImpresoraMac(): Promise<string> {
 }
 
 export async function conectarImpresora(_mac: string): Promise<boolean> {
+  console.warn("Impresión Bluetooth desactivada temporalmente - pendiente para v2");
   return false;
 }
 
 export async function imprimirTicket(_datos: DatosTicket): Promise<boolean> {
-  console.warn("Impresión no disponible en web.");
+  console.warn("Impresión Bluetooth desactivada temporalmente - pendiente para v2");
   return false;
 }
 
 export async function escanearDispositivos(): Promise<{ name: string; address: string }[]> {
+  console.warn("Impresión Bluetooth desactivada temporalmente - pendiente para v2");
   return [];
 }

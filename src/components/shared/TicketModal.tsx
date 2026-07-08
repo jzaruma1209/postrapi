@@ -1,7 +1,7 @@
-import { Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet } from "react-native";
+import { Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from "react-native";
 import { useMemo } from "react";
 import { formatDate, formatTime, formatCurrency } from "../../utils/dates";
-import { imprimirTicket, hayImpresoraConfigurada } from "../../services/printer.service";
+import { hayImpresoraConfigurada } from "../../services/printer.service";
 import { useState, useEffect } from "react";
 import type { DatosTicket } from "../../services/printer.service";
 import { useColors, useThemeStore } from "../../stores/useThemeStore";
@@ -27,7 +27,7 @@ export default function TicketModal({ visible, datos, onClose }: TicketModalProp
   const handleImprimir = async () => {
     if (!datos) return;
     setImprimiendo(true);
-    await imprimirTicket(datos);
+    Alert.alert("Impresión no disponible", "Esta funcionalidad estará disponible en la versión 2.");
     setImprimiendo(false);
   };
 
