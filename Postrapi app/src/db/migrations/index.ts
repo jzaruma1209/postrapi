@@ -2,7 +2,11 @@ import { db } from "../index";
 import { sql } from "drizzle-orm";
 
 export async function runMigrations(): Promise<void> {
-  await db.run(sql`PRAGMA journal_mode = WAL;`);
+  try {
+    await db.run(sql`PRAGMA journal_mode = WAL;`);
+  } catch {
+    // WAL mode no soportado en esta plataforma, continúa sin WAL
+  }
   await db.run(sql`PRAGMA foreign_keys = ON;`);
 
   await db.run(sql`
