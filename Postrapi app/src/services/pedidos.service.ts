@@ -114,7 +114,12 @@ export async function getPedidosActivos() {
   return await db
     .select()
     .from(pedidos)
-    .where(ne(pedidos.estado, "entregado"))
+    .where(
+      and(
+        ne(pedidos.estado, "entregado"),
+        ne(pedidos.estado, "anulado")
+      )
+    )
     .orderBy(desc(pedidos.created_at));
 }
 

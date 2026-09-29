@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   getIngredientes,
   crearIngrediente,
@@ -32,6 +33,7 @@ type PinAction = "ajustar" | "registrar_compra" | "guardar_ingrediente" | null;
 
 export default function BodegaIndex() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const colors = useColors();
   const isDark = useThemeStore((s) => s.isDark);
 
@@ -350,7 +352,7 @@ export default function BodegaIndex() {
             )}
           </ScrollView>
 
-          <View style={{ padding: 16, backgroundColor: colors.bgCard, borderTopWidth: isDark ? 0.5 : 1, borderTopColor: colors.border, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View style={{ padding: 16, paddingBottom: Math.max(insets.bottom, 16) + 64, backgroundColor: colors.bgCard, borderTopWidth: isDark ? 0.5 : 1, borderTopColor: colors.border, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600" }}>Total compras hoy</Text>
             <Text style={{ color: "#F97316", fontSize: 18, fontWeight: "bold" }}>${totalComprasHoy.toFixed(2)}</Text>
           </View>

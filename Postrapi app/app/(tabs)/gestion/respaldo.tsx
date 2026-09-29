@@ -92,8 +92,10 @@ export default function GestionRespaldo() {
     }
   };
 
-  const formatearFecha = (iso: string) => {
+  const formatearFecha = (iso: string | null) => {
+    if (!iso) return "Sin fecha";
     const d = new Date(iso);
+    if (isNaN(d.getTime())) return "Fecha inválida";
     return d.toLocaleDateString("es-ES", {
       day: "2-digit",
       month: "2-digit",

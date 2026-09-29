@@ -204,7 +204,7 @@ export default function VentasIndex() {
         )
         .orderBy(ventas.created_at);
       const idx = ventasDelDia.findIndex((v) => v.id === ventaId);
-      const numeroVenta = idx >= 0 ? idx + 1 : null;
+      const numeroVenta = idx >= 0 ? idx + 1 : undefined;
 
       const conf = await db.select().from(configuracion).where(eq(configuracion.clave, "nombre_negocio")).limit(1);
       const negocio = conf[0]?.valor || "Postrapi";

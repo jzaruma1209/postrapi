@@ -237,7 +237,7 @@ export default function AnulacionScreen() {
   const chipTextStyle = (activo: boolean) => ({
     color: activo ? "#fff" : colors.textLight,
     fontSize: 12,
-    fontWeight: activo ? "600" : "500" as const,
+    fontWeight: (activo ? "600" : "500") as "600" | "500",
   });
 
   const cardStyle = {

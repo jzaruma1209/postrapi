@@ -1,0 +1,27 @@
+en resumen debe mostrar lo sdaots de la caja abierta en caso no haya caja no omarata vent ashoy si no mostrar caja cerrada 
+
+segmentar tanod el modulo de resumn con ventas del dia gasto gantin estimasn y eso pero del con botone sarrai que diga hoy , ayer y otros y se peuda seleccionar
+
+- tambine que vent asel hiso de cajsa se peuda ver las histora de cajas hoy hsitiro de cjas ayer y histor ade cajas , otro spa rseclacionar un afecha 
+
+- cuando se le de a cajas uan caja debe salir detallado si se crearon productos ese dia si se compro algo si se hiso una compra si se ingres un producto , si se his oun sgato todos ala svena qu se hisieron y asi 
+
+
+
+- revisar si es solucionaodsobre cjas de hoy y sobre cajas de modulo de venta sel cajs ade hoy de resuman muestar solo las cajas de hoy enc sao havya varias y en de cjas de vnet s muestar todas las cas que hay o que se han ehco 
+
+
+en historial de ventas debe es si ce hoy mostar las ventas d ehoy y si se quiere er la de ayer o otra fehcsa debe mostrar primero las cajas que hay y sede selccioncion una caja par apoder mostrar las svenrtas que se hisierion 
+
+Recapitulando el orden completo que quedó pendiente:
+
+Bloque 1 — Separar efectivo/transferencia en Caja → 🔄 en progreso (corrigiendo 3 bugs ahora mismo)
+
+
+Bloque 2 — Historial de Cajas muestre también el desglose de transferencia → ⏳ pendiente
+Bloque 3 — Selector de fecha (Hoy/Ayer/Otros) en Historial de Cajas (módulo Ventas) + mensaje "caja no aperturada ese día" → ⏳ esto es lo que estás preguntando, todavía no
+Bloque 4 — Selector de fecha en "Cajas de hoy" (Resumen) + botón "Ver resumen de ayer" (ventas, gastos, pendientes, ganancia) → ⏳ esto también, todavía no
+
+
+
+revisar que el camibo del diseño sea fácil de hacer cuadno quier camibia rcolores tipos de letras  coas asi que sea fcil que otod este univfia do digamos asi o como fucion acad modulo tien tupodriap tipo de letra oqeu  o se si me entiendas quieor saber si se esta usando uan forma d etipo solid para el tipo de letra tamaño fuete colores bases o paleta d eocres par ami aplciaion o coo se esta ahceio es queorifroa y que reocmienda par que cuadno quier cambiar esto sparemetro sean fácil que todo se otomen d eun ismo arcio genera o que 

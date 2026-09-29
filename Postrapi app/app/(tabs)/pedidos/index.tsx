@@ -243,7 +243,7 @@ export default function PedidosIndex() {
         )
         .orderBy(ventas.created_at);
       const idx = ventasDelDia.findIndex((v) => v.id === ventaId);
-      const numeroVenta = idx >= 0 ? idx + 1 : null;
+      const numeroVenta = idx >= 0 ? idx + 1 : undefined;
       
       const conf = await db.select().from(configuracion).where(eq(configuracion.clave, "nombre_negocio")).limit(1);
       const negocio = conf[0]?.valor || "Postrapi";
@@ -253,6 +253,9 @@ export default function PedidosIndex() {
         fecha: new Date().toISOString(),
         numeroVenta,
         items: itemsCobroInfo,
+        subtotal: subtotalCobro,
+        descuentoTipo: descuentoActivo ? descuentoTipo : null,
+        descuentoValor: descuentoActivo && descuentoValorStr ? parseNumber(descuentoValorStr) : null,
         total: descuentoActivo ? totalConDescuento : subtotalCobro,
         metodoPago,
         ventaId

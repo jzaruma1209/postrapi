@@ -1,0 +1,34 @@
+npx expo start --clear
+npx expo start -c
+
+
+git switch -c fix-main
+
+
+CUENTA GOOGLE QUE SE ESTA USANDO 
+zpaul3981 wpbjbcabnfbfelwbhwgu
+
+
+bejo
+
+
+amd ryzen 3 3200u with Radeon vega mobile gic 2.60 GHz 8 gigas 
+ 
+
+
+1. Hiciste el commit en fix-main ✅
+git add .
+git commit -m "Mejoras en pedidos, ventas e interfaz principal"
+
+
+
+git status
+git add .
+git commit -m "Mensaje descriptivo"
+git push origin fix-main
+git checkout main
+git pull origin main
+git merge fix-main
+git push origin main
+git checkout fix-main
+git status

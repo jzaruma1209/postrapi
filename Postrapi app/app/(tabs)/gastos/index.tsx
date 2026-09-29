@@ -64,7 +64,7 @@ export default function GastosIndex() {
     }, [])
   );
 
-  const getCategoriaStyle = (cat: CategoriaGasto) => {
+  const getCategoriaStyle = (cat: string) => {
     switch (cat) {
       case "servicios":
         return { bg: isDark ? "#001a2a" : "#e0f2fe", text: "#38bdf8", label: "Servicios" };
@@ -86,7 +86,14 @@ export default function GastosIndex() {
 
   const breakdown = useMemo(() => {
     const res: Record<CategoriaGasto, number> = { servicios: 0, personal: 0, transporte: 0, otro: 0 };
-    gastosList.forEach((g) => { res[g.categoria] += g.monto; });
+    gastosList.forEach((g) => {
+      const cat = g.categoria as CategoriaGasto;
+      if (cat in res) {
+        res[cat] += g.monto;
+      } else {
+        res.otro += g.monto;
+      }
+    });
     return res;
   }, [gastosList]);
 
