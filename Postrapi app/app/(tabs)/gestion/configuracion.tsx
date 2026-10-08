@@ -149,7 +149,7 @@ export default function GestionConfiguracion() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 120 }}>
 
         {/* ── Sección: Apariencia ─────────────────────────────────────────── */}
         <View

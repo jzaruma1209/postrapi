@@ -152,7 +152,7 @@ export default function GestionRecetas() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 8, paddingBottom: 120 }}>
         {listaProductos.map((prod) => {
           const expandido = productoExpandido === prod.id;
           const ingredientesProd = recetasVinculadas[prod.id] || [];

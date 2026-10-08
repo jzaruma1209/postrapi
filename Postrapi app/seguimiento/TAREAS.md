@@ -9,15 +9,9 @@
 - **T-05** Supabase está abierto: las 11 tablas tienen una política `allow_all` y la clave pública va dentro del APK, así que cualquiera puede leer, modificar o borrar datos. No se puede cerrar hoy sin dejar de sincronizar: el cierre real exige cuentas por negocio (M-01) y reglas RLS por `negocio_id`. Se resuelve junto con M-01.
 
 ### 🟠 Media
-- **T-06** Los datos de ejemplo (seeds) usan IDs fijos (`prod-*`, `ing-*`). Cada instalación nueva reescribe esos productos e ingredientes en Supabase y suma 15 recetas duplicadas; por eso hay 255 recetas en la nube.
 - **T-07** Alinear dependencias con Expo SDK 57 (`npx expo install --fix`): hay 20 paquetes desalineados. Después, probar un build de Android.
-- **T-08** "Ganancia est." resta el costo de ingredientes de ventas anuladas: solo cuenta los movimientos `descuento_venta` e ignora las devoluciones.
-- **T-09** El botón "Guardar cambios" de Configuración queda tapado por la barra de pestañas. Antes se reportó lo mismo en Bodega; revisar ambas pantallas en el teléfono.
 
 ### 🟢 Baja
-- **T-10** Historial de Cajas muestra "Caja no aperturada este día" cuando hay una caja abierta, porque solo lista las cerradas.
-- **T-11** Si las migraciones fallan al abrir la app, se queda cargando para siempre (`app/_layout.tsx` no tiene try/catch).
-- **T-12** TypeScript marca 7 errores en `app/(tabs)/_layout.tsx`: `StyleSheet.absoluteFillObject` ya no existe en RN 0.86 y el fondo de la barra de pestañas puede verse mal.
 - **T-13** Cambiar `SALT_SECRETO` en `src/utils/pinRecovery.ts` y sacarlo del código (hoy está en git).
 - **T-14** Limpiar archivos sueltos: `npm` y `npx` (vacíos), `find_private_fields.js`, `App.tsx` e `index.ts` (sin uso), `ESTADO-AGENTES.json` y `tarea para ejecutar.md`.
 - **T-15** La impresión Bluetooth está desactivada desde la v1.
@@ -54,6 +48,12 @@
 - **M-16** Ganancia más útil: hoy depende de que se registren compras con precio; sin compras, la ganancia es igual a las ventas.
 
 ## Hechas
+- **2026-10-08** T-06 Las 15 recetas de ejemplo tienen ID fijo (`rec-<producto>-<ingrediente>`); una instalación nueva ya no las duplica en la nube. Falta limpiar los duplicados viejos (T-16/T-17).
+- **2026-10-08** T-08 "Ganancia est." ya descuenta el costo de lo devuelto por ventas anuladas (`devolucion_anulacion`).
+- **2026-10-08** T-09 Configuración, Bodega, Productos, Recetas y Gastos tienen espacio inferior para que la barra de pestañas no tape el último botón.
+- **2026-10-08** T-10 Historial de Cajas avisa "La caja de este día sigue abierta" en vez de "no aperturada".
+- **2026-10-08** T-11 Si falla la base de datos al abrir la app, se muestra un mensaje en vez de carga infinita.
+- **2026-10-08** T-12 `npx tsc --noEmit` pasa sin errores.
 - **2026-10-07** T-01 La fecha de "hoy" ahora es la hora local del teléfono, no UTC (`src/utils/dates.ts`: `todayDate`, `fechaLocal`, `inicioDia`, `finDia`; reemplazados los 51 usos). Verificado en web: la caja abre con fecha 2026-10-07 a las 11 p. m. Las cajas viejas guardadas con fecha UTC quedan como estaban.
 - **2026-10-07** T-02 Toda actualización de cierre de caja, estado/entrega de pedidos y stock de ingredientes ahora marca `synced: 0` y sube a Supabase.
 - **2026-10-07** T-03 Ventas, pedidos, anulaciones, ajustes de stock y compras corren dentro de una transacción real que se deshace si algo falla (`src/db/transaccion.ts`). Verificado en web con una venta: el stock se descontó bien. Falta probar en Android.

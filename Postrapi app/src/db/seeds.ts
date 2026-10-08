@@ -39,37 +39,37 @@ export async function runSeeds(): Promise<void> {
   // ─── RECETAS ──────────────────────────────────────────
   // Papa con pollo: 0.3kg papas + 0.2kg pollo + 0.05L aceite + 0.01kg sal
   await db.insert(recetas).values([
-    { id: generateId(), productoId: prodPapaPollo.id, ingredienteId: ingPapas.id, cantidad: 0.3, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodPapaPollo.id, ingredienteId: ingPollo.id, cantidad: 0.2, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodPapaPollo.id, ingredienteId: ingAceite.id, cantidad: 0.05, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodPapaPollo.id, ingredienteId: ingSal.id, cantidad: 0.01, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodPapaPollo.id}-${ingPapas.id}`, productoId: prodPapaPollo.id, ingredienteId: ingPapas.id, cantidad: 0.3, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodPapaPollo.id}-${ingPollo.id}`, productoId: prodPapaPollo.id, ingredienteId: ingPollo.id, cantidad: 0.2, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodPapaPollo.id}-${ingAceite.id}`, productoId: prodPapaPollo.id, ingredienteId: ingAceite.id, cantidad: 0.05, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodPapaPollo.id}-${ingSal.id}`, productoId: prodPapaPollo.id, ingredienteId: ingSal.id, cantidad: 0.01, created_at: nowISO(), synced: 0 },
   ]);
 
   // Salchipapa: 0.25kg papas + 0.15kg salchichas + 0.05L aceite
   await db.insert(recetas).values([
-    { id: generateId(), productoId: prodSalchipapa.id, ingredienteId: ingPapas.id, cantidad: 0.25, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodSalchipapa.id, ingredienteId: ingSalchicha.id, cantidad: 0.15, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodSalchipapa.id, ingredienteId: ingAceite.id, cantidad: 0.05, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodSalchipapa.id}-${ingPapas.id}`, productoId: prodSalchipapa.id, ingredienteId: ingPapas.id, cantidad: 0.25, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodSalchipapa.id}-${ingSalchicha.id}`, productoId: prodSalchipapa.id, ingredienteId: ingSalchicha.id, cantidad: 0.15, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodSalchipapa.id}-${ingAceite.id}`, productoId: prodSalchipapa.id, ingredienteId: ingAceite.id, cantidad: 0.05, created_at: nowISO(), synced: 0 },
   ]);
 
   // Combo familiar: 0.5kg papas + 0.4kg pollo + 0.1L aceite + 2 gaseosas
   await db.insert(recetas).values([
-    { id: generateId(), productoId: prodComboFamiliar.id, ingredienteId: ingPapas.id, cantidad: 0.5, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodComboFamiliar.id, ingredienteId: ingPollo.id, cantidad: 0.4, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodComboFamiliar.id, ingredienteId: ingAceite.id, cantidad: 0.1, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodComboFamiliar.id, ingredienteId: ingGaseosa.id, cantidad: 2, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodComboFamiliar.id}-${ingPapas.id}`, productoId: prodComboFamiliar.id, ingredienteId: ingPapas.id, cantidad: 0.5, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodComboFamiliar.id}-${ingPollo.id}`, productoId: prodComboFamiliar.id, ingredienteId: ingPollo.id, cantidad: 0.4, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodComboFamiliar.id}-${ingAceite.id}`, productoId: prodComboFamiliar.id, ingredienteId: ingAceite.id, cantidad: 0.1, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodComboFamiliar.id}-${ingGaseosa.id}`, productoId: prodComboFamiliar.id, ingredienteId: ingGaseosa.id, cantidad: 2, created_at: nowISO(), synced: 0 },
   ]);
 
   // Gaseosa: 1 unidad
   await db.insert(recetas).values([
-    { id: generateId(), productoId: prodGaseosa.id, ingredienteId: ingGaseosa.id, cantidad: 1, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodGaseosa.id}-${ingGaseosa.id}`, productoId: prodGaseosa.id, ingredienteId: ingGaseosa.id, cantidad: 1, created_at: nowISO(), synced: 0 },
   ]);
 
   // Hamburguesa: 1 pan + 0.15kg pollo + 0.05kg queso
   await db.insert(recetas).values([
-    { id: generateId(), productoId: prodHamburguesa.id, ingredienteId: ingPan.id, cantidad: 1, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodHamburguesa.id, ingredienteId: ingPollo.id, cantidad: 0.15, created_at: nowISO(), synced: 0 },
-    { id: generateId(), productoId: prodHamburguesa.id, ingredienteId: ingQueso.id, cantidad: 0.05, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodHamburguesa.id}-${ingPan.id}`, productoId: prodHamburguesa.id, ingredienteId: ingPan.id, cantidad: 1, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodHamburguesa.id}-${ingPollo.id}`, productoId: prodHamburguesa.id, ingredienteId: ingPollo.id, cantidad: 0.15, created_at: nowISO(), synced: 0 },
+    { id: `rec-${prodHamburguesa.id}-${ingQueso.id}`, productoId: prodHamburguesa.id, ingredienteId: ingQueso.id, cantidad: 0.05, created_at: nowISO(), synced: 0 },
   ]);
 
   console.log("✅ Seeds ejecutados: 8 ingredientes, 5 productos, recetas vinculadas");

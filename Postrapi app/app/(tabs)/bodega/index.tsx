@@ -328,7 +328,7 @@ export default function BodegaIndex() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 120 }}>
             {comprasList.map(comp => {
               const ing = ingredientesList.find(i => i.id === comp.ingredienteId);
               return (
@@ -368,7 +368,7 @@ export default function BodegaIndex() {
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 120 }}>
             {ingredientesList.map(ing => (
               <TouchableOpacity
                 key={ing.id}

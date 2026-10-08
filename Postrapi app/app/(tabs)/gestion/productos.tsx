@@ -162,7 +162,7 @@ export default function GestionProductos() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 8, paddingBottom: 120 }}>
         {listaProductos.map((prod) => (
           <View
             key={prod.id}

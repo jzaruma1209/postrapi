@@ -32,12 +32,14 @@ export default function HistorialCajas() {
   const [showPicker, setShowPicker] = useState(false);
   type FiltroActivo = "hoy" | "ayer" | "otro";
   const [filtroActivo, setFiltroActivo] = useState<FiltroActivo>("hoy");
+  const [hayCajaAbierta, setHayCajaAbierta] = useState(false);
 
   const cargarCajas = async (fecha: string) => {
     setCargando(true);
     try {
       const data = await getCajasPorFecha(fecha);
       const cerradas = data.filter((c) => c.cerrada_at !== null);
+      setHayCajaAbierta(data.some((c) => c.cerrada_at === null));
       const conResumen: CajaConResumen[] = [];
 
       for (const c of cerradas) {
@@ -284,7 +286,9 @@ export default function HistorialCajas() {
 
           {cajas.length === 0 && !cargando && (
             <Text style={{ color: colors.textMuted, textAlign: "center", marginTop: 40 }}>
-              Caja no aperturada este día
+              {hayCajaAbierta
+                ? "La caja de este día sigue abierta. Ciérrala para verla aquí."
+                : "Caja no aperturada este día"}
             </Text>
           )}
         </ScrollView>

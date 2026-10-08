@@ -2,7 +2,7 @@ import { db } from "../db";
 import {
   ingredientes, movimientosInventario, compras, gastos, recetas, ventaItems, ventas
 } from "../db/schema";
-import { eq, and, gte, lte, sql, desc, lt } from "drizzle-orm";
+import { eq, and, or, gte, lte, sql, desc, lt } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
 import { nowISO, todayDate, inicioDia, finDia } from "../utils/dates";
 import { conTransaccion } from "../db/transaccion";
@@ -247,7 +247,10 @@ export async function getCostoIngredientesPorFecha(fecha: string): Promise<numbe
     .from(movimientosInventario)
     .where(
       and(
-        eq(movimientosInventario.tipo, "descuento_venta"),
+        or(
+          eq(movimientosInventario.tipo, "descuento_venta"),
+          eq(movimientosInventario.tipo, "devolucion_anulacion")
+        ),
         gte(movimientosInventario.created_at, inicioDia(fecha)),
         lte(movimientosInventario.created_at, finDia(fecha))
       )
@@ -256,7 +259,8 @@ export async function getCostoIngredientesPorFecha(fecha: string): Promise<numbe
   let costoTotal = 0;
   for (const mov of movimientos) {
     const costoUnitario = await getCostoUnitarioPromedio(mov.ingredienteId);
-    costoTotal += Math.abs(mov.cantidad) * costoUnitario;
+    // descuento_venta es negativo (suma costo); devolucion_anulacion es positivo (lo resta)
+    costoTotal += -mov.cantidad * costoUnitario;
   }
 
   return costoTotal;

@@ -3,13 +3,13 @@ import { Feather } from "@expo/vector-icons";
 import { Dimensions, Platform, StyleSheet } from "react-native";
 import { BlurView } from "expo-blur";
 import { useThemeStore } from "../../src/stores/useThemeStore";
-import type { ViewStyle } from "react-native";
+import type { ColorValue, ViewStyle } from "react-native";
 
 type FeatherIconName = React.ComponentProps<typeof Feather>["name"];
 
 interface TabIconProps {
   name: FeatherIconName;
-  color: string;
+  color: ColorValue;
   size?: number;
 }
 
@@ -63,7 +63,7 @@ export default function TabsLayout() {
             intensity={Platform.OS === "android" ? 65 : 40}
             tint={isDark ? "dark" : "light"}
             style={{
-              ...StyleSheet.absoluteFillObject,
+              ...StyleSheet.absoluteFill as object,
               borderRadius: 32,
               borderWidth: 0.5,
               borderColor: colors.tabBarBorder,

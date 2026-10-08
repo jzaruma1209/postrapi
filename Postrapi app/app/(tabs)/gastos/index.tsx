@@ -198,7 +198,7 @@ export default function GastosIndex() {
       </View>
 
       {/* Lista de gastos */}
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 120 }}>
         {gastosFiltrados.map((gasto) => {
           const catStyle = getCategoriaStyle(gasto.categoria);
           return (
