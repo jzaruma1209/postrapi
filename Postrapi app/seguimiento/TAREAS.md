@@ -29,7 +29,7 @@
 - **F-10** (Paul + Claude) Pasar al ambiente de producción.
 
 ### 🧪 Pruebas en teléfono
-- **T-18** (Paul) Abrir la app en un teléfono Android y probar: venta, pedido entregado, anulación, cierre de caja y descuento con PIN. Valida T-03, T-04 y la actualización de paquetes T-07 antes de construir un APK.
+- **T-18** (Paul) Abrir la app en un teléfono Android y probar: venta, pedido entregado, anulación, cierre de caja y descuento con PIN. Valida T-03, T-04 y la actualización de paquetes T-07 antes de construir un APK. Importante: instalar primero en un teléfono **sin datos reales** y confirmar que las ventas anteriores siguen ahí después de actualizar (en la prueba web, la actualización de SQLite empezó con una base vacía).
 ## Mejoras (ideas)
 
 ### Camino a SaaS
