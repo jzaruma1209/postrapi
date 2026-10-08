@@ -6,6 +6,10 @@ module.exports = {
     "./components/**/*.{js,jsx,ts,tsx}",
   ],
   presets: [require("nativewind/preset")],
+  // En web, con 'media' (default) react-native-css-interop lanza
+  // "Cannot manually set color scheme" al detectar el CSS inyectado.
+  // El tema lo maneja useThemeStore, no las clases dark:.
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
