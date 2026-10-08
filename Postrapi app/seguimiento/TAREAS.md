@@ -1,6 +1,6 @@
 # Tareas y mejoras — Postrapi
 
-> Última actualización: 2026-10-07 (noche)
+> Última actualización: 2026-10-08
 > Prioridad: 🔴 Alta · 🟠 Media · 🟢 Baja · ❓ Requiere decisión de Paul
 
 ## Pendientes
@@ -16,6 +16,20 @@
 
 ### ❓ Decisión
 
+### 🧾 Facturación electrónica (plan en `FACTURACION.md`)
+- **F-01** (Paul) Consultar con un contador: régimen (RIMPE negocio popular / emprendedor / general), si los precios del menú incluyen IVA, el 10 % de servicio, el monto máximo para consumidor final, la anulación de facturas y qué hacer sin internet ahora que la transmisión al SRI debe ser inmediata.
+- **F-02** (Paul) Comprar una firma electrónica en archivo `.p12` (no token USB) para el RUC de pruebas.
+- **F-03** (Paul) En SRI en línea: solicitar el ambiente de pruebas de comprobantes electrónicos y confirmar establecimiento 001 y punto de emisión 001.
+- **F-04** (Paul) Decidir dónde corre el servidor de firma (recomendado: Supabase Edge Functions).
+- **F-05** (Claude) Validar el XML de la factura contra el XSD oficial de la ficha técnica vigente.
+- **F-06** (Claude, necesita F-02 a F-04) Servidor de firma XAdES-BES y envío a Recepción/Autorización del SRI en ambiente de pruebas, con reintentos.
+- **F-07** (Claude) Pantallas: Gestión → Facturación, "¿Factura?" al cobrar (consumidor final o cliente), lista de comprobantes con estado y reintento, ticket/RIDE con clave de acceso, envío por correo.
+- **F-08** (Claude) Notas de crédito y anulación de facturas autorizadas; modo contingencia sin internet.
+- **F-09** (Claude) Sincronizar `clientes` y `comprobantes` con Supabase (después de M-01).
+- **F-10** (Paul + Claude) Pasar al ambiente de producción.
+
+### 🧪 Pruebas en teléfono
+- **T-18** (Paul) Abrir la app en un teléfono Android y probar: venta, pedido entregado, anulación, cierre de caja y descuento con PIN. Valida T-03, T-04 y la actualización de paquetes T-07 antes de construir un APK.
 ## Mejoras (ideas)
 
 ### Camino a SaaS
@@ -28,7 +42,7 @@
 - **M-07** Panel web Pro: reportes avanzados, rentabilidad por plato y exportar a Excel.
 - **M-08** IA en Pro: preguntas en lenguaje natural, alertas de caja descuadrada y de stock, sugerencias de compra.
 - **M-09** Pedidos automáticos por WhatsApp (n8n) con menú digital.
-- **M-10** Facturación electrónica del SRI a través de un proveedor externo.
+- **M-10** Facturación electrónica del SRI: se hará con implementación propia (ver F-01 a F-10 y `FACTURACION.md`).
 - **M-11** Publicar en Play Store: política de privacidad, opción de borrar cuenta y prueba cerrada (12 testers durante 14 días).
 
 ### Plataforma y forma de trabajo
@@ -44,6 +58,7 @@
 - **M-16** Ganancia más útil: hoy depende de que se registren compras con precio; sin compras, la ganancia es igual a las ventas.
 
 ## Hechas
+- **2026-10-08** Facturación, fase 1: núcleo en `src/facturacion/` (cédula/RUC, clave de acceso módulo 11 verificada con el ejemplo del SRI, IVA con descuentos, XML 1.1.0), tablas locales `clientes` y `comprobantes`, y `facturacion.service.ts` (venta → factura pendiente con secuencial en transacción). Pruebas: `npm run probar:facturacion` y prueba en la app web con 2 facturas que cuadran con lo cobrado.
 - **2026-10-08** T-07 Dependencias alineadas con Expo SDK 57 (`npx expo install --fix -- --legacy-peer-deps`; sin la bandera, npm falla por un conflicto de rangos). `expo install --check` dice "up to date", `tsc` sin errores y compilan Android y web. Cambio de código: `expo-status-bar` 57 ya no acepta `backgroundColor`. **Falta probar en un teléfono Android** (reanimated, screens y sqlite cambiaron de versión mayor).
 - **2026-10-08** T-14 Eliminados `npm`, `npx`, `find_private_fields.js`, `App.tsx`, `index.ts`, `ESTADO-AGENTES.json` y `tarea para ejecutar.md` (siguen en el historial de git).
 - **2026-10-08** Las 15 recetas de Supabase ahora tienen ID fijo `rec-<producto>-<ingrediente>`, igual que las de una instalación nueva.

@@ -225,5 +225,45 @@ export async function runMigrations(): Promise<void> {
     );
   `);
 
+  // Migración 0005: facturación electrónica (solo local por ahora)
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS clientes (
+      id TEXT PRIMARY KEY,
+      tipo_identificacion TEXT NOT NULL,
+      identificacion TEXT NOT NULL UNIQUE,
+      razon_social TEXT NOT NULL,
+      direccion TEXT,
+      email TEXT,
+      telefono TEXT,
+      created_at TEXT NOT NULL,
+      synced INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+  await db.run(sql`
+    CREATE TABLE IF NOT EXISTS comprobantes (
+      id TEXT PRIMARY KEY,
+      venta_id TEXT NOT NULL REFERENCES ventas(id),
+      tipo TEXT NOT NULL,
+      estab TEXT NOT NULL,
+      pto_emi TEXT NOT NULL,
+      secuencial TEXT NOT NULL,
+      clave_acceso TEXT NOT NULL UNIQUE,
+      fecha_emision TEXT NOT NULL,
+      ambiente TEXT NOT NULL,
+      identificacion_comprador TEXT NOT NULL,
+      razon_social_comprador TEXT NOT NULL,
+      email_comprador TEXT,
+      importe_total REAL NOT NULL,
+      estado TEXT NOT NULL DEFAULT 'pendiente',
+      xml TEXT NOT NULL,
+      numero_autorizacion TEXT,
+      fecha_autorizacion TEXT,
+      mensajes TEXT,
+      intentos INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      synced INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+
   console.log("✅ Migrations ejecutadas correctamente");
 }

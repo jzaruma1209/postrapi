@@ -47,7 +47,7 @@ function contar(texto, regex) {
 const tareas = leer(path.join(carpeta, "TAREAS.md")) ?? "";
 const pendientes = seccion(tareas, "Pendientes");
 const alta = seccion(pendientes.replace(/### /g, "## "), "🔴 Alta");
-const nPendientes = contar(pendientes, /^- \*\*T-\d+/gm);
+const nPendientes = contar(pendientes, /^- \*\*[TF]-\d+/gm);
 const nAlta = contar(alta, /^- \*\*T-\d+/gm);
 const nMejoras = contar(seccion(tareas, "Mejoras (ideas)"), /^- \*\*M-\d+/gm);
 const nHechas = contar(seccion(tareas, "Hechas"), /^- \*\*\d{4}-/gm);

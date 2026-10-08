@@ -6,6 +6,7 @@ Esta carpeta guarda el estado del trabajo para que cada sesión con Claude arran
 |---|---|
 | `TAREAS.md` | Tareas pendientes (T-xx), mejoras (M-xx) y tareas hechas con fecha |
 | `FLUJO.md` | Diagramas de cómo funciona la app hoy |
+| `FACTURACION.md` | Plan de facturación electrónica del SRI |
 | `sesiones/AAAA-MM-DD.md` | Registro de cada sesión de trabajo |
 
 ## Cómo usarlo (frases para decirle a Claude)

@@ -163,6 +163,46 @@ export const configuracion = sqliteTable("configuracion", {
   valor: text("valor").notNull(),
 });
 
+// ─── FACTURACIÓN ELECTRÓNICA (aún no se sincroniza) ──────
+export const clientes = sqliteTable("clientes", {
+  id: text("id").primaryKey(),
+  tipoIdentificacion: text("tipo_identificacion").notNull(), // 04 RUC | 05 cédula | 06 pasaporte
+  identificacion: text("identificacion").notNull().unique(),
+  razonSocial: text("razon_social").notNull(),
+  direccion: text("direccion"),
+  email: text("email"),
+  telefono: text("telefono"),
+  created_at: text("created_at").notNull(),
+  synced: integer("synced").notNull().default(0),
+});
+
+export const comprobantes = sqliteTable("comprobantes", {
+  id: text("id").primaryKey(),
+  ventaId: text("venta_id")
+    .notNull()
+    .references(() => ventas.id),
+  tipo: text("tipo").notNull(), // 01 factura
+  estab: text("estab").notNull(),
+  ptoEmi: text("pto_emi").notNull(),
+  secuencial: text("secuencial").notNull(),
+  claveAcceso: text("clave_acceso").notNull().unique(),
+  fechaEmision: text("fecha_emision").notNull(), // dd/mm/aaaa
+  ambiente: text("ambiente").notNull(), // 1 pruebas | 2 producción
+  identificacionComprador: text("identificacion_comprador").notNull(),
+  razonSocialComprador: text("razon_social_comprador").notNull(),
+  emailComprador: text("email_comprador"),
+  importeTotal: real("importe_total").notNull(),
+  // pendiente (sin firmar/enviar) | recibido | autorizado | devuelto | no_autorizado
+  estado: text("estado").notNull().default("pendiente"),
+  xml: text("xml").notNull(),
+  numeroAutorizacion: text("numero_autorizacion"),
+  fechaAutorizacion: text("fecha_autorizacion"),
+  mensajes: text("mensajes"),
+  intentos: integer("intentos").notNull().default(0),
+  created_at: text("created_at").notNull(),
+  synced: integer("synced").notNull().default(0),
+});
+
 // ─── TIPOS INFERIDOS ──────────────────────────────────────
 export type Producto = typeof productos.$inferSelect;
 export type NuevoProducto = typeof productos.$inferInsert;
