@@ -1,6 +1,6 @@
 # Tareas y mejoras — Postrapi
 
-> Última actualización: 2026-10-08
+> Última actualización: 2026-10-08 (cierre de sesión)
 > Prioridad: 🔴 Alta · 🟠 Media · 🟢 Baja · ❓ Requiere decisión de Paul
 
 ## Pendientes
