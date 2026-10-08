@@ -2,9 +2,10 @@ import { db } from "../db";
 import { pedidos, pedidoItems, productos, ventas } from "../db/schema";
 import { eq, and, ne, desc, gte, lte } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
-import { nowISO, todayDate } from "../utils/dates";
+import { nowISO, todayDate, inicioDia, finDia } from "../utils/dates";
 import { crearVenta, getCajaAbierta, anularVenta } from "./ventas.service";
 import type { OrigenPedido, EstadoPedido, MetodoPago } from "../utils/types";
+import { conTransaccion } from "../db/transaccion";
 
 export interface ItemPedido {
   productoId: string;
@@ -20,7 +21,11 @@ export interface CrearPedidoParams {
   origen: OrigenPedido;
 }
 
-export async function crearPedido(params: CrearPedidoParams): Promise<string> {
+export function crearPedido(params: CrearPedidoParams): Promise<string> {
+  return conTransaccion(() => crearPedidoSinTx(params));
+}
+
+async function crearPedidoSinTx(params: CrearPedidoParams): Promise<string> {
   // Validar que haya caja abierta antes de crear pedido
   const cajaAbierta = await getCajaAbierta();
   if (!cajaAbierta) {
@@ -31,7 +36,7 @@ export async function crearPedido(params: CrearPedidoParams): Promise<string> {
   const pedidoId = generateId();
   const now = nowISO();
 
-  // Bypassing db.transaction temporalmente para diagnosticar bug de expo-sqlite
+  // La transacción la abre el wrapper exportado (conTransaccion)
   const tx = db;
   
   await tx.insert(pedidos).values({
@@ -65,7 +70,7 @@ export async function cambiarEstadoPedido(
 ): Promise<void> {
   await db
     .update(pedidos)
-    .set({ estado })
+    .set({ estado, synced: 0 })
     .where(eq(pedidos.id, pedidoId));
 }
 
@@ -137,8 +142,8 @@ export async function getPedidosHoy() {
     .from(pedidos)
     .where(
       and(
-        gte(pedidos.created_at, `${hoy}T00:00:00.000Z`),
-        lte(pedidos.created_at, `${hoy}T23:59:59.999Z`)
+        gte(pedidos.created_at, inicioDia(hoy)),
+        lte(pedidos.created_at, finDia(hoy))
       )
     )
     .orderBy(desc(pedidos.created_at));
@@ -154,8 +159,12 @@ export async function getPedidosPendientesCount(): Promise<number> {
 
 // ─── ANULAR PEDIDO ────────────────────────────────────────
 // Validar PIN desde la UI antes de invocar esta función.
-export async function anularPedido(pedidoId: string, motivo: string): Promise<void> {
-  const tx = db; // Usando db directo por bug expo-sqlite
+export function anularPedido(pedidoId: string, motivo: string): Promise<void> {
+  return conTransaccion(() => anularPedidoSinTx(pedidoId, motivo));
+}
+
+async function anularPedidoSinTx(pedidoId: string, motivo: string): Promise<void> {
+  const tx = db; // la transacción la abre el wrapper exportado (conTransaccion)
 
   // 1. Leer pedido
   const pResult = await tx.select().from(pedidos).where(eq(pedidos.id, pedidoId)).limit(1);

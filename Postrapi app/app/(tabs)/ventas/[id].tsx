@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { inicioDia, finDia } from "../../../src/utils/dates";
 import { View, Text, TouchableOpacity, ScrollView, Modal } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -54,8 +55,8 @@ export default function DetalleVenta() {
           .from(ventas)
           .where(
             and(
-              gte(ventas.created_at, `${ventaDate}T00:00:00.000Z`),
-              lte(ventas.created_at, `${ventaDate}T23:59:59.999Z`)
+              gte(ventas.created_at, inicioDia(ventaDate)),
+              lte(ventas.created_at, finDia(ventaDate))
             )
           )
           .orderBy(ventas.created_at);

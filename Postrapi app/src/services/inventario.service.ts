@@ -4,7 +4,8 @@ import {
 } from "../db/schema";
 import { eq, and, gte, lte, sql, desc, lt } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
-import { nowISO, todayDate } from "../utils/dates";
+import { nowISO, todayDate, inicioDia, finDia } from "../utils/dates";
+import { conTransaccion } from "../db/transaccion";
 import type { CategoriaGasto } from "../utils/types";
 
 // ─── INGREDIENTES ─────────────────────────────────────────
@@ -39,7 +40,7 @@ export async function editarIngrediente(
   id: string,
   data: Partial<{ nombre: string; unidad: string; stockMinimo: number }>
 ): Promise<void> {
-  await db.update(ingredientes).set(data).where(eq(ingredientes.id, id));
+  await db.update(ingredientes).set({ ...data, synced: 0 }).where(eq(ingredientes.id, id));
 }
 
 // ─── ALERTAS DE STOCK BAJO ────────────────────────────────
@@ -52,11 +53,17 @@ export async function getIngredientesStockBajo() {
 
 // ─── AJUSTE MANUAL DE STOCK ───────────────────────────────
 // Requiere PIN — verificar PIN antes de llamar esta función
-export async function ajustarStock(params: {
+type AjusteStockParams = {
   ingredienteId: string;
   stockReal: number; // lo que el dueño contó físicamente
   motivo: string;
-}): Promise<void> {
+};
+
+export function ajustarStock(params: AjusteStockParams): Promise<void> {
+  return conTransaccion(() => ajustarStockSinTx(params));
+}
+
+async function ajustarStockSinTx(params: AjusteStockParams): Promise<void> {
   const { ingredienteId, stockReal, motivo } = params;
   const now = nowISO();
 
@@ -83,7 +90,7 @@ export async function ajustarStock(params: {
   // Actualizar stock
   await tx
     .update(ingredientes)
-    .set({ stockActual: stockReal })
+    .set({ stockActual: stockReal, synced: 0 })
     .where(eq(ingredientes.id, ingredienteId));
 }
 
@@ -110,12 +117,18 @@ export async function getHistorialAjustes(ingredienteId?: string) {
 
 // ─── COMPRAS ──────────────────────────────────────────────
 // Requiere PIN — verificar PIN antes de llamar esta función
-export async function registrarCompra(params: {
+type CompraParams = {
   ingredienteId: string;
   cantidad: number;
   costoTotal: number;
   fecha: string;
-}): Promise<void> {
+};
+
+export function registrarCompra(params: CompraParams): Promise<void> {
+  return conTransaccion(() => registrarCompraSinTx(params));
+}
+
+async function registrarCompraSinTx(params: CompraParams): Promise<void> {
   const { ingredienteId, cantidad, costoTotal, fecha } = params;
   const now = nowISO();
 
@@ -148,7 +161,7 @@ export async function registrarCompra(params: {
   // Actualizar stock
   await tx
     .update(ingredientes)
-    .set({ stockActual: sql`stock_actual + ${cantidad}` })
+    .set({ stockActual: sql`stock_actual + ${cantidad}`, synced: 0 })
     .where(eq(ingredientes.id, ingredienteId));
 }
 
@@ -235,8 +248,8 @@ export async function getCostoIngredientesPorFecha(fecha: string): Promise<numbe
     .where(
       and(
         eq(movimientosInventario.tipo, "descuento_venta"),
-        gte(movimientosInventario.created_at, `${fecha}T00:00:00.000Z`),
-        lte(movimientosInventario.created_at, `${fecha}T23:59:59.999Z`)
+        gte(movimientosInventario.created_at, inicioDia(fecha)),
+        lte(movimientosInventario.created_at, finDia(fecha))
       )
     );
 

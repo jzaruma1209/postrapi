@@ -5,8 +5,9 @@ import {
 } from "../db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { generateId } from "../utils/uuid";
-import { nowISO, todayDate } from "../utils/dates";
+import { nowISO, todayDate, inicioDia, finDia } from "../utils/dates";
 import type { MetodoPago } from "../utils/types";
+import { conTransaccion } from "../db/transaccion";
 
 // ─── TIPOS ────────────────────────────────────────────────
 export interface ItemVenta {
@@ -31,7 +32,11 @@ export interface VentaConItems {
 
 // ─── CREAR VENTA ──────────────────────────────────────────
 // CRÍTICO: Todo en una sola transacción SQLite
-export async function crearVenta(params: CrearVentaParams): Promise<string> {
+export function crearVenta(params: CrearVentaParams): Promise<string> {
+  return conTransaccion(() => crearVentaSinTx(params));
+}
+
+async function crearVentaSinTx(params: CrearVentaParams): Promise<string> {
   // Validar que haya caja abierta antes de cobrar (DEBE ser la primera operación)
   const cajaAbierta = await getCajaAbierta();
   if (!cajaAbierta) {
@@ -52,7 +57,7 @@ export async function crearVenta(params: CrearVentaParams): Promise<string> {
 
   const total = subtotal - aplicarDescuento;
 
-  // Bypassing db.transaction temporalmente para diagnosticar bug de expo-sqlite
+  // La transacción la abre el wrapper exportado (conTransaccion)
   const tx = db;
   
   console.log("==> Iniciando transaccion crearVenta con ventaId:", ventaId);
@@ -117,6 +122,7 @@ export async function crearVenta(params: CrearVentaParams): Promise<string> {
         .update(ingredientes)
         .set({
           stockActual: sql`stock_actual - ${cantidadDescontar}`,
+          synced: 0,
         })
         .where(eq(ingredientes.id, recetaItem.ingredienteId));
       console.log("==> Stock actualizado OK");
@@ -128,7 +134,7 @@ export async function crearVenta(params: CrearVentaParams): Promise<string> {
     console.log("==> Actualizando pedido:", pedidoId);
     await tx
       .update(pedidos)
-      .set({ estado: "entregado", entregado_at: now })
+      .set({ estado: "entregado", entregado_at: now, synced: 0 })
       .where(eq(pedidos.id, pedidoId));
     console.log("==> Pedido actualizado OK");
   }
@@ -145,7 +151,7 @@ export async function anularVenta(
   motivo: string,
   devolverStock: boolean
 ): Promise<void> {
-  const tx = db; // Usando db directo por bug expo-sqlite
+  const tx = db; // la transacción la abre el wrapper exportado (conTransaccion)
 
   // 1. Leer venta
   const vResult = await tx.select().from(ventas).where(eq(ventas.id, ventaId)).limit(1);
@@ -190,6 +196,7 @@ export async function anularVenta(
           .update(ingredientes)
           .set({
             stockActual: sql`stock_actual + ${cantidadDevolver}`,
+            synced: 0,
           })
           .where(eq(ingredientes.id, recetaItem.ingredienteId));
       }
@@ -214,8 +221,8 @@ export async function getVentasHoy() {
     .from(ventas)
     .where(
       and(
-        gte(ventas.created_at, `${hoy}T00:00:00.000Z`),
-        lte(ventas.created_at, `${hoy}T23:59:59.999Z`),
+        gte(ventas.created_at, inicioDia(hoy)),
+        lte(ventas.created_at, finDia(hoy)),
         eq(ventas.anulada, 0)
       )
     )
@@ -234,8 +241,8 @@ export async function getTotalVentasPorFecha(fecha: string): Promise<number> {
     .from(ventas)
     .where(
       and(
-        gte(ventas.created_at, `${fecha}T00:00:00.000Z`),
-        lte(ventas.created_at, `${fecha}T23:59:59.999Z`),
+        gte(ventas.created_at, inicioDia(fecha)),
+        lte(ventas.created_at, finDia(fecha)),
         eq(ventas.anulada, 0)
       )
     );
@@ -258,8 +265,8 @@ export async function getHistorialVentas(fecha?: string) {
     .from(ventas)
     .where(
       and(
-        gte(ventas.created_at, `${dia}T00:00:00.000Z`),
-        lte(ventas.created_at, `${dia}T23:59:59.999Z`),
+        gte(ventas.created_at, inicioDia(dia)),
+        lte(ventas.created_at, finDia(dia)),
         eq(ventas.anulada, 0)
       )
     )
@@ -285,7 +292,7 @@ export async function abrirCaja(montoInicial: number): Promise<string> {
 export async function cerrarCaja(cajaId: string, montoEfectivo: number, montoTransferencia: number): Promise<void> {
   await db
     .update(cajaDiaria)
-    .set({ montoDeclaradoEfectivo: montoEfectivo, montoDeclaradoTransferencia: montoTransferencia, cerrada_at: nowISO() })
+    .set({ montoDeclaradoEfectivo: montoEfectivo, montoDeclaradoTransferencia: montoTransferencia, cerrada_at: nowISO(), synced: 0 })
     .where(eq(cajaDiaria.id, cajaId));
 }
 
@@ -316,8 +323,8 @@ export async function getCajasDeHoy() {
     .from(cajaDiaria)
     .where(
       and(
-        gte(cajaDiaria.created_at, `${hoy}T00:00:00.000Z`),
-        lte(cajaDiaria.created_at, `${hoy}T23:59:59.999Z`)
+        gte(cajaDiaria.created_at, inicioDia(hoy)),
+        lte(cajaDiaria.created_at, finDia(hoy))
       )
     )
     .orderBy(cajaDiaria.created_at);
@@ -329,8 +336,8 @@ export async function getCajasPorFecha(fecha: string) {
     .from(cajaDiaria)
     .where(
       and(
-        gte(cajaDiaria.created_at, `${fecha}T00:00:00.000Z`),
-        lte(cajaDiaria.created_at, `${fecha}T23:59:59.999Z`)
+        gte(cajaDiaria.created_at, inicioDia(fecha)),
+        lte(cajaDiaria.created_at, finDia(fecha))
       )
     )
     .orderBy(cajaDiaria.created_at);
@@ -395,8 +402,8 @@ export async function getTopProductosPorFecha(fecha: string, limit = 3) {
     .innerJoin(ventas, eq(ventaItems.ventaId, ventas.id))
     .where(
       and(
-        gte(ventas.created_at, `${fecha}T00:00:00.000Z`),
-        lte(ventas.created_at, `${fecha}T23:59:59.999Z`),
+        gte(ventas.created_at, inicioDia(fecha)),
+        lte(ventas.created_at, finDia(fecha)),
         eq(ventas.anulada, 0)
       )
     )

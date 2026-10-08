@@ -14,7 +14,7 @@ import {
 } from "../../src/services/inventario.service";
 import { getPedidosActivos } from "../../src/services/pedidos.service";
 import { calcularGanancia, formatearGanancia, formatearCantidad } from "../../src/utils/calculos";
-import { todayDate } from "../../src/utils/dates";
+import { todayDate, fechaLocal } from "../../src/utils/dates";
 import { db } from "../../src/db";
 import { productos } from "../../src/db/schema";
 import type { Pedido, Ingrediente } from "../../src/db/schema";
@@ -127,7 +127,7 @@ export default function ResumenIndex() {
     setFiltroActivo("ayer");
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    setFechaSeleccionada(d.toISOString().split("T")[0]);
+    setFechaSeleccionada(fechaLocal(d));
     setShowPicker(false);
   };
 
@@ -139,7 +139,7 @@ export default function ResumenIndex() {
   const seleccionarFecha = (_: any, date?: Date) => {
     setShowPicker(Platform.OS === "ios");
     if (date) {
-      setFechaSeleccionada(date.toISOString().split("T")[0]);
+      setFechaSeleccionada(fechaLocal(date));
     }
   };
 

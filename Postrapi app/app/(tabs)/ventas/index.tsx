@@ -24,7 +24,7 @@ import { configuracion } from "../../../src/db/schema";
 import TicketModal from "../../../src/components/shared/TicketModal";
 import type { DatosTicket } from "../../../src/services/printer.service";
 import PinModal from "../../../src/components/shared/PinModal";
-import { todayDate } from "../../../src/utils/dates";
+import { inicioDia, finDia, todayDate } from "../../../src/utils/dates";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 export default function VentasIndex() {
@@ -76,6 +76,7 @@ export default function VentasIndex() {
 
   // PIN Modal State for old caja warning
   const [showPinModal, setShowPinModal] = useState(false);
+  const [pinDescuento, setPinDescuento] = useState(false);
 
   const fechaHoyStr = useMemo(() => {
     const fecha = new Date();
@@ -192,14 +193,14 @@ export default function VentasIndex() {
       });
 
       // Compute sequential number for today
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayDate();
       const ventasDelDia = await db
         .select({ id: ventas.id, created_at: ventas.created_at })
         .from(ventas)
         .where(
           and(
-            gte(ventas.created_at, `${today}T00:00:00.000Z`),
-            lte(ventas.created_at, `${today}T23:59:59.999Z`)
+            gte(ventas.created_at, inicioDia(today)),
+            lte(ventas.created_at, finDia(today))
           )
         )
         .orderBy(ventas.created_at);
@@ -531,7 +532,7 @@ export default function VentasIndex() {
             {/* Sección de Descuento */}
             {!descuentoActivo ? (
               <TouchableOpacity
-                onPress={() => setDescuentoActivo(true)}
+                onPress={() => setPinDescuento(true)}
                 style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 16, gap: 6 }}
               >
                 <Feather name="tag" size={14} color={colors.textMuted} />
@@ -692,6 +693,18 @@ export default function VentasIndex() {
             ejecutarConfirmarVenta();
           }}
           onCancel={() => setShowPinModal(false)}
+        />
+      )}
+
+      {pinDescuento && (
+        <PinModal
+          visible={pinDescuento}
+          titulo="PIN para aplicar descuento"
+          onSuccess={() => {
+            setPinDescuento(false);
+            setDescuentoActivo(true);
+          }}
+          onCancel={() => setPinDescuento(false)}
         />
       )}
     </View>

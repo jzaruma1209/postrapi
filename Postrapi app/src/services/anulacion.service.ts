@@ -1,7 +1,7 @@
 import { db } from "../db";
 import { ventas, ventaItems, pedidos, pedidoItems, productos } from "../db/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
-import { todayDate } from "../utils/dates";
+import { inicioDia, finDia, todayDate } from "../utils/dates";
 
 export async function getVentasDelDia(fecha?: string) {
   const dia = fecha ?? todayDate();
@@ -10,8 +10,8 @@ export async function getVentasDelDia(fecha?: string) {
     .from(ventas)
     .where(
       and(
-        gte(ventas.created_at, `${dia}T00:00:00.000Z`),
-        lte(ventas.created_at, `${dia}T23:59:59.999Z`)
+        gte(ventas.created_at, inicioDia(dia)),
+        lte(ventas.created_at, finDia(dia))
       )
     )
     .orderBy(desc(ventas.created_at));
@@ -24,8 +24,8 @@ export async function getPedidosDelDia(fecha?: string) {
     .from(pedidos)
     .where(
       and(
-        gte(pedidos.created_at, `${dia}T00:00:00.000Z`),
-        lte(pedidos.created_at, `${dia}T23:59:59.999Z`)
+        gte(pedidos.created_at, inicioDia(dia)),
+        lte(pedidos.created_at, finDia(dia))
       )
     )
     .orderBy(desc(pedidos.created_at));

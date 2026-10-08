@@ -8,7 +8,7 @@ import {
   getVentasEnRango,
   getGastosEnRango,
 } from "../../src/services/ventas.service";
-import { nowISO, todayDate } from "../../src/utils/dates";
+import { nowISO, todayDate, fechaLocal } from "../../src/utils/dates";
 import type { CajaDiaria } from "../../src/db/schema";
 import { useColors, useThemeStore } from "../../src/stores/useThemeStore";
 
@@ -89,7 +89,7 @@ export default function ResumenCajas() {
     setFiltroActivo("ayer");
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    setFechaSeleccionada(d.toISOString().split("T")[0]);
+    setFechaSeleccionada(fechaLocal(d));
     setShowPicker(false);
   };
 
@@ -101,7 +101,7 @@ export default function ResumenCajas() {
   const seleccionarFecha = (_: any, date?: Date) => {
     setShowPicker(Platform.OS === "ios");
     if (date) {
-      setFechaSeleccionada(date.toISOString().split("T")[0]);
+      setFechaSeleccionada(fechaLocal(date));
     }
   };
 

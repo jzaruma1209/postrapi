@@ -5,7 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { db } from "../../../src/db";
 import { ventas, ventaItems } from "../../../src/db/schema";
-import { todayDate } from "../../../src/utils/dates";
+import { fechaLocal, inicioDia, finDia, todayDate } from "../../../src/utils/dates";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
 type VentaHistorial = {
@@ -44,8 +44,8 @@ export default function HistorialVentas() {
         .leftJoin(ventaItems, eq(ventas.id, ventaItems.ventaId))
         .where(
           and(
-            gte(ventas.created_at, `${dateStr}T00:00:00.000Z`),
-            lte(ventas.created_at, `${dateStr}T23:59:59.999Z`)
+            gte(ventas.created_at, inicioDia(dateStr)),
+            lte(ventas.created_at, finDia(dateStr))
           )
         )
         .groupBy(ventas.id)
@@ -67,7 +67,7 @@ export default function HistorialVentas() {
   const setFechaAyer = () => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    setFecha(d.toISOString().split("T")[0]);
+    setFecha(fechaLocal(d));
   };
 
   const setFechaHoy = () => {

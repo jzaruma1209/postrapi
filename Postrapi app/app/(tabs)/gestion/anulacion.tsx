@@ -17,7 +17,7 @@ import {
   getProductoNombre,
 } from "../../../src/services/anulacion.service";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
-import { formatTime, todayDate } from "../../../src/utils/dates";
+import { formatTime, todayDate, fechaLocal } from "../../../src/utils/dates";
 import type { Venta, VentaItem, Pedido, PedidoItem } from "../../../src/db/schema";
 
 type TabActivo = "ventas" | "pedidos";
@@ -118,7 +118,7 @@ export default function AnulacionScreen() {
     setFiltroActivo("ayer");
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    setFechaSeleccionada(d.toISOString().split("T")[0]);
+    setFechaSeleccionada(fechaLocal(d));
     setShowPicker(false);
   };
 
@@ -130,7 +130,7 @@ export default function AnulacionScreen() {
   const seleccionarFecha = (_: any, date?: Date) => {
     setShowPicker(Platform.OS === "ios");
     if (date) {
-      setFechaSeleccionada(date.toISOString().split("T")[0]);
+      setFechaSeleccionada(fechaLocal(date));
     }
   };
 

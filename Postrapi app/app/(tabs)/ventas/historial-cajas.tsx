@@ -8,7 +8,7 @@ import {
   getVentasEnRango,
   getGastosEnRango,
 } from "../../../src/services/ventas.service";
-import { todayDate } from "../../../src/utils/dates";
+import { todayDate, fechaLocal } from "../../../src/utils/dates";
 import type { CajaDiaria } from "../../../src/db/schema";
 import { useColors, useThemeStore } from "../../../src/stores/useThemeStore";
 
@@ -90,7 +90,7 @@ export default function HistorialCajas() {
     setFiltroActivo("ayer");
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    setFechaSeleccionada(d.toISOString().split("T")[0]);
+    setFechaSeleccionada(fechaLocal(d));
     setShowPicker(false);
   };
 
@@ -102,7 +102,7 @@ export default function HistorialCajas() {
   const seleccionarFecha = (_: any, date?: Date) => {
     setShowPicker(Platform.OS === "ios");
     if (date) {
-      setFechaSeleccionada(date.toISOString().split("T")[0]);
+      setFechaSeleccionada(fechaLocal(date));
     }
   };
 
