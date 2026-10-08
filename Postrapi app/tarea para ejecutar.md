@@ -1,1 +1,0 @@
-quiero que reives el modulo de rusumen yu veas si falta algo o no cuadra algo 

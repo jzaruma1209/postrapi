@@ -9,11 +9,9 @@
 - **T-05** Supabase está abierto: las 11 tablas tienen una política `allow_all` y la clave pública va dentro del APK, así que cualquiera puede leer, modificar o borrar datos. No se puede cerrar hoy sin dejar de sincronizar: el cierre real exige cuentas por negocio (M-01) y reglas RLS por `negocio_id`. Se resuelve junto con M-01.
 
 ### 🟠 Media
-- **T-07** Alinear dependencias con Expo SDK 57 (`npx expo install --fix`): hay 20 paquetes desalineados. Después, probar un build de Android.
 
 ### 🟢 Baja
 - **T-13** Cambiar `SALT_SECRETO` en `src/utils/pinRecovery.ts` y sacarlo del código (hoy está en git).
-- **T-14** Limpiar archivos sueltos: `npm` y `npx` (vacíos), `find_private_fields.js`, `App.tsx` e `index.ts` (sin uso), `ESTADO-AGENTES.json` y `tarea para ejecutar.md`.
 - **T-15** La impresión Bluetooth está desactivada desde la v1.
 
 ### ❓ Decisión
@@ -46,6 +44,9 @@
 - **M-16** Ganancia más útil: hoy depende de que se registren compras con precio; sin compras, la ganancia es igual a las ventas.
 
 ## Hechas
+- **2026-10-08** T-07 Dependencias alineadas con Expo SDK 57 (`npx expo install --fix -- --legacy-peer-deps`; sin la bandera, npm falla por un conflicto de rangos). `expo install --check` dice "up to date", `tsc` sin errores y compilan Android y web. Cambio de código: `expo-status-bar` 57 ya no acepta `backgroundColor`. **Falta probar en un teléfono Android** (reanimated, screens y sqlite cambiaron de versión mayor).
+- **2026-10-08** T-14 Eliminados `npm`, `npx`, `find_private_fields.js`, `App.tsx`, `index.ts`, `ESTADO-AGENTES.json` y `tarea para ejecutar.md` (siguen en el historial de git).
+- **2026-10-08** Las 15 recetas de Supabase ahora tienen ID fijo `rec-<producto>-<ingrediente>`, igual que las de una instalación nueva.
 - **2026-10-08** T-16/T-17 Paul ejecutó el SQL en Supabase y se borraron los duplicados de recetas: quedan 15 recetas, una por combinación producto + ingrediente. Verificado desde Claude.
 - **2026-10-08** T-06 Las 15 recetas de ejemplo tienen ID fijo (`rec-<producto>-<ingrediente>`); una instalación nueva ya no las duplica en la nube. Falta limpiar los duplicados viejos (T-16/T-17).
 - **2026-10-08** T-08 "Ganancia est." ya descuenta el costo de lo devuelto por ventas anuladas (`devolucion_anulacion`).

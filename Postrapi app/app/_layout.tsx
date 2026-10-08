@@ -73,7 +73,7 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style={isDark ? "light" : "dark"} backgroundColor={isDark ? "#141414" : "#f5f5f5"} />
+      <StatusBar style={isDark ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false }} />
     </>
   );
