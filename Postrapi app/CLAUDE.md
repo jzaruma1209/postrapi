@@ -28,3 +28,12 @@ Las tareas, mejoras y sesiones se guardan en `seguimiento/` (ver `seguimiento/RE
 ## Pendiente para la próxima sesión
 - ...
 ```
+
+# Procedimientos repetibles → skill (siempre)
+
+Cuando Paul pida hacer algo complejo o que se va a repetir (subir a GitHub, publicar un build, probar la app sin tocar la nube, crear un negocio de prueba, etc.), no lo resuelvas solo una vez:
+
+1. Hazlo, y cuando Paul confirme que quedó bien, **crea un skill** del proyecto en `.claude/skills/<nombre>/SKILL.md` con los pasos exactos, los comandos y las trampas que aparecieron. Si el procedimiento es automático y sin decisiones (por ejemplo, correr algo en cada sesión), usa un hook en `.claude/settings.json`; si hace falta correr algo fuera de Claude (n8n, GitHub Actions), propón un workflow y explica por qué.
+2. Antes de empezar una tarea de este tipo, revisa si ya existe un skill en `.claude/skills/` y úsalo, para no gastar tokens re-descubriendo los pasos.
+3. Anota en `seguimiento/TAREAS.md` (sección Hechas) qué skill se creó.
+4. Skills ya creados: (ninguno todavía)
