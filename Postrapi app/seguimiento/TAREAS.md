@@ -17,8 +17,6 @@
 - **T-15** La impresión Bluetooth está desactivada desde la v1.
 
 ### ❓ Decisión
-- **T-16** Limpiar en Supabase las 30 recetas duplicadas que subieron las pruebas del 2026-10-07 (`created_at` 2026-10-08T03:47 y 03:49 UTC, `producto_id` `prod-*`). Paul lo aprobó pero el permiso de borrado fue rechazado; falta repetirlo. Además hay unos 210 duplicados más de instalaciones anteriores (ver T-17).
-- **T-17** En Supabase hay 255 recetas pero solo 15 combinaciones únicas (producto + ingrediente): unos 240 duplicados desde julio por T-06. Decidir si se borran todos los repetidos dejando el más antiguo de cada combinación.
 
 ## Mejoras (ideas)
 
@@ -48,6 +46,7 @@
 - **M-16** Ganancia más útil: hoy depende de que se registren compras con precio; sin compras, la ganancia es igual a las ventas.
 
 ## Hechas
+- **2026-10-08** T-16/T-17 Paul ejecutó el SQL en Supabase y se borraron los duplicados de recetas: quedan 15 recetas, una por combinación producto + ingrediente. Verificado desde Claude.
 - **2026-10-08** T-06 Las 15 recetas de ejemplo tienen ID fijo (`rec-<producto>-<ingrediente>`); una instalación nueva ya no las duplica en la nube. Falta limpiar los duplicados viejos (T-16/T-17).
 - **2026-10-08** T-08 "Ganancia est." ya descuenta el costo de lo devuelto por ventas anuladas (`devolucion_anulacion`).
 - **2026-10-08** T-09 Configuración, Bodega, Productos, Recetas y Gastos tienen espacio inferior para que la barra de pestañas no tape el último botón.
