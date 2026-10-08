@@ -1,5 +1,19 @@
 {
   "enabledPlugins": {
     "expo@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/inicio-sesion.js\"",
+            "timeout": 15,
+            "statusMessage": "Cargando resumen del proyecto..."
+          }
+        ]
+      }
+    ]
   }
 }
