@@ -9,12 +9,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn("⚠️ Variables de Supabase no configuradas. Sync desactivado.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-    detectSessionInUrl: false,
-  },
-});
-
 export const isSupabaseConfigured = !!supabaseUrl && !!supabaseAnonKey;
+
+// createClient lanza error si la URL está vacía; con valores de relleno la app
+// arranca igual y el sync queda desactivado por isSupabaseConfigured.
+export const supabase = createClient(
+  isSupabaseConfigured ? supabaseUrl : "http://localhost",
+  isSupabaseConfigured ? supabaseAnonKey : "sin-configurar",
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  }
+);
